@@ -18,7 +18,7 @@ class UserProfile(models.Model):
     # email
     user=models.OneToOneField(to=User,on_delete=models.CASCADE,related_name="profile",null=True)
     bio=models.TextField(null=True,blank=True)
-    last_seen=models.DateTimeField(default=timezone.now())
+    last_seen=models.DateTimeField(default=timezone.now)
     is_online=models.BooleanField(default=False)
     profile_pic=models.ImageField(null=True,blank=True,upload_to='avatars/')
     roles=models.CharField(max_length=10,choices=[("admin","admin"),("user","user"),("moderator","moderator")],default="user")
