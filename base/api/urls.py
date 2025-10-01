@@ -5,7 +5,9 @@ from ..views import user_views as uv
 
 
 urlpatterns=[
-    path("login/",uv.UserApiview.as_view()),
+    path("user-details/",uv.UserApiview.as_view()),
+    path("admin-login/",uv.LoginApiview.as_view()),
+    path("logout/",uv.LogoutApiview.as_view())
 ]
 
 if settings.DEBUG==True:

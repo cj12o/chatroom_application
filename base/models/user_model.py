@@ -14,13 +14,14 @@ upload_to='avatars/' → uploaded images are saved under:
 MEDIA_ROOT/avatars/"""
 
 class UserProfile(models.Model):
-    username=models.CharField(null=False,blank=False,max_length=100)
-    email=models.EmailField(null=False,blank=False)
+    # username
+    # email
+    user=models.OneToOneField(to=User,on_delete=models.CASCADE,related_name="profile",null=True)
     bio=models.TextField(null=True,blank=True)
     last_seen=models.DateTimeField(default=timezone.now())
     is_online=models.BooleanField(default=False)
     profile_pic=models.ImageField(null=True,blank=True,upload_to='avatars/')
-    roles=models.CharField(max_length=10,choices=[("admin","Admin"),("User","user"),("Moderator","moderator")])
+    roles=models.CharField(max_length=10,choices=[("admin","admin"),("user","user"),("moderator","moderator")],default="user")
     created_at=models.DateField(auto_now_add=True)
 
 
