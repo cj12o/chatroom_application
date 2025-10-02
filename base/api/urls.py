@@ -4,7 +4,7 @@ from django.conf import settings
 
 from ..views import admin_views as av
 from ..views import room_views as rv
-
+from ..views import message_views as mv
 urlpatterns=[
     path("user-details/",av.UserApiview.as_view()),
     path("admin-login/",av.LoginApiview.as_view()),
@@ -12,7 +12,11 @@ urlpatterns=[
 
     #ROOM VIEWS
     path("rooms/list/",rv.listRooms),
-    path("rooms/operations/",rv.RoomApiview.as_view())
+    path("rooms/operations/",rv.RoomApiview.as_view()),
+
+    #message views
+    path("rooms/<int:pk>/messages/",mv.MessageApiview.as_view())
+
 ]
 
 if settings.DEBUG==True:
