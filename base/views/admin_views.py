@@ -63,6 +63,7 @@ class UserApiview(APIView):
     def get(self,request):
         
         print(f"{request.GET.get("name")}")
+        print("ok")
         qs=User.objects.all()
 
         if request.GET.get("name"):
