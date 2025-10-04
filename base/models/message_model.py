@@ -15,7 +15,15 @@ class Message(models.Model):
 class Reaction(models.Model):
     author=models.ForeignKey(to=User,on_delete=models.CASCADE,related_name="author_reaction")
     message=models.ForeignKey(to=Message,on_delete=models.CASCADE)
-    reaction=models.TextField(null=True,blank=True)
     emoji=models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+class Emoji(models.Model):
+    author=models.ForeignKey(to=User,on_delete=models.CASCADE,related_name="author_emoji")
+    message=models.ForeignKey(to=Message,on_delete=models.CASCADE,related_name="message_emoji")
+    emoji=models.CharField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+

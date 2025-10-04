@@ -1,10 +1,11 @@
 from rest_framework.views import APIView
 from django.contrib.auth.models import User
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated,AllowAny
 from rest_framework.authentication import TokenAuthentication,BaseAuthentication
 from rest_framework import status
 from django.db.models import Q
+
 
 from ..serializers.message_serializer import MessageSerializerForCreation,MessageSerializer
 from ..models.message_model import Message
@@ -12,8 +13,14 @@ from ..models.room_model import Room
 
 class MessageApiview(APIView):
     permission_classes=[IsAuthenticated]
-    authentication_classes=[TokenAuthentication,BaseAuthentication]
+    authentication_classes=[TokenAuthentication]
 
+    def get_permissions(self):
+        if self.request.method=="GET":
+            return [AllowAny()]
+        else:
+            return [IsAuthenticated()]
+    
     def post(self,request,pk):
        
         data=request.data
@@ -41,8 +48,9 @@ class MessageApiview(APIView):
             "message":"error in posting msg"
         },status=status.HTTP_400_BAD_REQUEST)   
     
-
+    
     def get(self,request,pk):
+        
         print(f"✅✅Room id=>{pk}")
         msg=Message.objects.filter(Q(room__id=pk))
         

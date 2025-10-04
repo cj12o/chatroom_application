@@ -5,12 +5,13 @@ from rest_framework.authtoken.models import Token
 from django.db.models import Q
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication,TokenAuthentication
 from rest_framework.permissions import IsAuthenticated,IsAdminUser
+from rest_framework.decorators import api_view
 # token = Token.objects.create(user=...)
 # print(token.key)
 
 
 from ..models.user_model import UserProfile,User
-from ..serializers.user_serializer import UserSerializer,AdminLoginSerializer
+from ..serializers.user_serializer import UserSerializer,AdminLoginSerializer,SignupSerializer
 
 #for admin
 class LoginApiview(APIView):
@@ -19,7 +20,7 @@ class LoginApiview(APIView):
         data=request.data
         serializer=AdminLoginSerializer(data=data) 
         if serializer.is_valid():
-            user=User.objects.get(Q(username=data["username"]))
+            user=User.objects.get(Q(email=data["email"]))
             token,created=Token.objects.get_or_create(user=user) 
             # print(f"{token}")
             return Response({
@@ -39,21 +40,34 @@ class LogoutApiview(APIView):
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
 
-    def post(self,request):
-        serializer=AdminLoginSerializer(data=request.data)
-        if serializer.is_valid():
+    def get(self,request):
+        if request.user:
             request.user.auth_token.delete()
             return Response({
                 "message":"logged out"
             },status=status.HTTP_200_OK)
         
         return Response({
-            "message":"logout failed",
-            "errors":serializer.errors
+            "message":"logout failed"
         },status=status.HTTP_400_BAD_REQUEST)
 
 
 
+class SignUpApiview(APIView):
+    def post(self,request):
+        data=request.data
+        serializer=SignupSerializer(data=data)
+        if serializer.is_valid():
+            # print(serializer.data)
+            serializer.save()
+            return Response({
+                "userdata":serializer.data,
+                "message":"user registered"
+            },status=status.HTTP_200_OK)
+                
+        return Response({
+            "errors":serializer.errors
+        },status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserApiview(APIView):
@@ -63,7 +77,6 @@ class UserApiview(APIView):
     def get(self,request):
         
         print(f"{request.GET.get("name")}")
-        print("ok")
         qs=User.objects.all()
 
         if request.GET.get("name"):
@@ -88,22 +101,7 @@ class UserApiview(APIView):
                 "errors":serializer.errors
             },status=status.HTTP_400_BAD_REQUEST)
         
-    def post(self,request):
-        userdata=request.data
-        serializer=UserSerializer(data=userdata)
 
-        if serializer.is_valid():
-            serializer.save()
-            return Response({
-                "userdata":serializer.data,
-                "message":"user registered"
-            },status=status.HTTP_200_OK)
-        
-        return Response({
-            "errors":serializer.errors,
-            "message":"error in user registration"
-        },status=status.HTTP_400_BAD_REQUEST)
-    
     def patch(self,request):
         try:
             data=request.data

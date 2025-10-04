@@ -52,18 +52,18 @@ class UserSerializer(serializers.Serializer):
         
 
 class AdminLoginSerializer(serializers.Serializer):
-    username=serializers.CharField()
+    email=serializers.EmailField()
     password=serializers.CharField()
 
     def validate(self,validated_data):
         # print(f"Validated data=>{validated_data}")
         try:
-            username=validated_data["username"]
+            email=validated_data["email"]
             password=validated_data["password"]
-            user=User.objects.get(Q(username=username)& Q(is_superuser=True))
+            user=User.objects.get(Q(email=email))
         
         except User.DoesNotExist:
-            raise serializers.ValidationError("Invalid credentials No such Admin")
+            raise serializers.ValidationError("Invalid user")
         
 
         if not user.check_password(password):
@@ -72,4 +72,38 @@ class AdminLoginSerializer(serializers.Serializer):
         return validated_data
     
 
+
+class SignupSerializer(serializers.Serializer):
+    username=serializers.CharField()
+    email=serializers.EmailField()
+    password=serializers.CharField()
+    # class Meta:
+    #     model=User
+    #     fields=["username","password","email"]
+
+    #wriiting custom validation 
+    def validate(self,data):
+        print(f"data=>{data}")
+        if "username" not in data.keys():
+            raise serializers.ValidationError("username is required")
+        elif "email" not in data:
+            raise serializers.ValidationError("email is required")
+        elif "password" not in data:
+            raise serializers.ValidationError("password is required")
+    
+        
+        
+        user=User.objects.filter(Q(username=data["username"]) | Q(email=data["email"]))
+        if not user:
+            return data
+        raise serializers.ValidationError(f"username or email are already Taken")
+                
+
+    def create(self,validated_data):
+        user=User.objects.create(username=validated_data["username"],email=validated_data["email"])
+        user.set_password(validated_data["password"])
+
+        user.save()
+        print(user)
+        return user
 
