@@ -26,15 +26,25 @@ class LoginApiview(APIView):
             serializer_2=UserProfSerializer(userprofile,many=True)
             token,created=Token.objects.get_or_create(user=user) 
             # print(f"{token}")
-            serializer_2.data[0]['profile_pic']=f"http://127.0.0.1:8000"+serializer_2.data[0]['profile_pic']
-            return Response({
+
+            if len(serializer_2.data)>0:
+                print(f"✅✅Serializer:{serializer_2}")
+                serializer_2.data[0]['profile_pic']=f"http://127.0.0.1:8000"+serializer_2.data[0]['profile_pic']
+                return Response({
+                    "userdata":serializer.data,
+                    "profile":serializer_2.data,
+                    "name":str(user.username),
+                    "token":token.key,
+                    "message":"Admin logged in "
+                },status=status.HTTP_200_OK)
+            else:
+                return Response({
                 "userdata":serializer.data,
-                "profile":serializer_2.data,
+                "profile":[],
                 "name":str(user.username),
                 "token":token.key,
                 "message":"Admin logged in "
             },status=status.HTTP_200_OK)
-    
         else:
             return Response({
                 "errors":serializer.errors

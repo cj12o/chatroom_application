@@ -8,6 +8,7 @@ from ..views import message_views as mv
 from ..views import reaction_views as rcv
 from ..views import emoji_views as ev
 from ..views import profile_views as pv
+from ..views import topic_views as tv
 
 urlpatterns=[
     path("user-details/",av.UserApiview.as_view()),
@@ -29,8 +30,12 @@ urlpatterns=[
 
 
     ##userprofile view
-    path("userprofile/",pv.UserProfileApiview.as_view())
+    path("userprofile/",pv.UserProfileApiview.as_view()),
 
+
+    ##topic view
+
+    path("topics/",tv.TopicApiview.as_view()),
 ]
 
 

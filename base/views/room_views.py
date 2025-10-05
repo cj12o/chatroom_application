@@ -57,6 +57,7 @@ class RoomApiview(APIView):
         })
         if serializer.is_valid():
             serializer.save()
+            print(f"Serializer data{serializer.data}")
             return Response({
                 "roomdata":serializer.data,
                 "message":"Room created"
