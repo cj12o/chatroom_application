@@ -1,6 +1,6 @@
 from django.db import models
 from .room_model import Room
-from .user_model import User 
+from django.contrib.auth.models import User 
 
 class Message(models.Model):
     room = models.ForeignKey(to=Room,on_delete=models.CASCADE,related_name="room_msg")

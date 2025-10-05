@@ -7,6 +7,7 @@ from ..views import room_views as rv
 from ..views import message_views as mv
 from ..views import reaction_views as rcv
 from ..views import emoji_views as ev
+from ..views import profile_views as pv
 
 urlpatterns=[
     path("user-details/",av.UserApiview.as_view()),
@@ -26,8 +27,11 @@ urlpatterns=[
     ##emoji views
     path("messages/<int:pk>/emoji/<int:q>/",ev.EmojiApiview.as_view()),
 
+
+    ##userprofile view
+    path("userprofile/",pv.UserProfileApiview.as_view())
+
 ]
 
-if settings.DEBUG==True:
-    urlpatterns+=static(settings.MEDIA_URL,document_root=settings.MEDIA_ROOT)
+
 

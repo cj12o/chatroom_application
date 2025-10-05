@@ -6,13 +6,14 @@ from django.db.models import Q
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication,TokenAuthentication
 from rest_framework.permissions import IsAuthenticated,IsAdminUser
 from rest_framework.decorators import api_view
+
 # token = Token.objects.create(user=...)
 # print(token.key)
 
 
-from ..models.user_model import UserProfile,User
+from ..models.userprofile_model import UserProfile,User
 from ..serializers.user_serializer import UserSerializer,AdminLoginSerializer,SignupSerializer
-
+from ..serializers.userprof_serializer import UserProfSerializer
 #for admin
 class LoginApiview(APIView):
     
@@ -21,10 +22,15 @@ class LoginApiview(APIView):
         serializer=AdminLoginSerializer(data=data) 
         if serializer.is_valid():
             user=User.objects.get(Q(email=data["email"]))
+            userprofile=UserProfile.objects.filter(Q(user__email=data["email"]))
+            serializer_2=UserProfSerializer(userprofile,many=True)
             token,created=Token.objects.get_or_create(user=user) 
             # print(f"{token}")
+            serializer_2.data[0]['profile_pic']=f"http://127.0.0.1:8000"+serializer_2.data[0]['profile_pic']
             return Response({
                 "userdata":serializer.data,
+                "profile":serializer_2.data,
+                "name":str(user.username),
                 "token":token.key,
                 "message":"Admin logged in "
             },status=status.HTTP_200_OK)

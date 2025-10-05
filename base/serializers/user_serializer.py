@@ -107,3 +107,6 @@ class SignupSerializer(serializers.Serializer):
         print(user)
         return user
 
+
+
+
