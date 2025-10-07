@@ -4,29 +4,48 @@ from rest_framework.authentication import TokenAuthentication
 from django.contrib.auth.models import User
 from rest_framework.response import Response
 from rest_framework import status
-from ..serializers.userprof_serializer import UserProfSerializer
 from django.db.models import Q
-from ..models.userprofile_model import UserProfile
 
+from ..serializers.userprof_serializer import UserProfSerializer,RoomsCreatedSerializer
+# from ..serializers.room_serializer import RoomSerializer
+from ..models.userprofile_model import UserProfile
+from ..models.room_model import Room
 
 class UserProfileApiview(APIView):
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
-    #get all users pk is username
-    def get(self,request):
-        user=User.objects.filter(id=request.user.id)
+
+    """get user profile pk is userid"""
+
+    def get(self,request,pk):
+        user=User.objects.get(id=pk)
         # print(f"✅✅user=>{user}")
         if not user:
             return Response({
                 "message":"Invalid user"
             })
-        userprofile=UserProfile.objects.filter(Q(user__username=request.user.username)&Q(user__email=request.user.email))
+        print(f"✅✅USER:{user}")
+        userprofile=UserProfile.objects.filter(Q(user__id=pk))
         serializer=UserProfSerializer(userprofile,many=True,context={'request':request})
         if serializer:
-            return Response({
-                "userdata":serializer.data,
-                "name":str(request.user.username)
-            },status=status.HTTP_200_OK)
+            #####
+            rooms=Room.objects.filter(Q(author__id=pk))
+            serializer_room=RoomsCreatedSerializer(rooms,many=True)
+            if serializer_room:
+            #####
+                
+                return Response({
+                    "userdata":serializer.data,
+                    "name":str(user.username),
+                    "rooms_created":[r["name"] for r in serializer_room.data]
+                },status=status.HTTP_200_OK)
+            
+            else:
+                return Response({
+                    "userdata":serializer.data,
+                    "name":str(user.username),
+                    "rooms_created":[]
+                },status=status.HTTP_200_OK)
         
         else:
             return Response({

@@ -30,7 +30,7 @@ urlpatterns=[
 
 
     ##userprofile view
-    path("userprofile/",pv.UserProfileApiview.as_view()),
+    path("userprofile/<int:pk>/",pv.UserProfileApiview.as_view()),
 
 
     ##topic view
