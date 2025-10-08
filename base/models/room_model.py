@@ -14,7 +14,6 @@ class Room(models.Model):
     ####
     topic=models.CharField(max_length=100)
     is_private=models.BooleanField(null=False,blank=False,default=False)
-    participants=models.ManyToManyField(to=User,related_name="room_participant",null=True,blank=True)
-    members=models.ManyToManyField(to=User,null=True,blank=True,related_name="room_member")
+    members=models.ManyToManyField(to=User,related_name="room_member")
     created_at=models.DateTimeField(auto_now_add=True)
     updated_at=models.DateTimeField(auto_now=True)

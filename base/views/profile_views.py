@@ -7,7 +7,7 @@ from rest_framework import status
 from django.db.models import Q
 
 from ..serializers.userprof_serializer import UserProfSerializer,RoomsCreatedSerializer
-# from ..serializers.room_serializer import RoomSerializer
+from ..serializers.room_serializer import RoomSerializer
 from ..models.userprofile_model import UserProfile
 from ..models.room_model import Room
 
@@ -17,36 +17,54 @@ class UserProfileApiview(APIView):
 
     """get user profile pk is userid"""
 
-    def get(self,request,pk):
-        user=User.objects.get(id=pk)
+    def get_permissions(self):
+        if self.request.method=="GET":
+            return []
+        else: return [IsAuthenticated()]
+
+    def get(self,request,q):
+        user=User.objects.get(username=q)
         # print(f"✅✅user=>{user}")
         if not user:
             return Response({
                 "message":"Invalid user"
             })
         print(f"✅✅USER:{user}")
-        userprofile=UserProfile.objects.filter(Q(user__id=pk))
+        userprofile=UserProfile.objects.filter(Q(user__username=q))
         serializer=UserProfSerializer(userprofile,many=True,context={'request':request})
         if serializer:
             #####
-            rooms=Room.objects.filter(Q(author__id=pk))
+
+
+            rooms=Room.objects.filter(Q(author__username=q))
             serializer_room=RoomsCreatedSerializer(rooms,many=True)
-            if serializer_room:
-            #####
-                
-                return Response({
-                    "userdata":serializer.data,
-                    "name":str(user.username),
-                    "rooms_created":[r["name"] for r in serializer_room.data]
-                },status=status.HTTP_200_OK)
             
-            else:
-                return Response({
-                    "userdata":serializer.data,
+            ###member
+            member_room=user.room_member.filter()
+            # print(f"✅✅memeber of rooms:{member_room}")
+            
+
+            member_room_lst=[]
+            if member_room:
+                for room in member_room:
+                    member_room_lst.append(room.name)
+                    # print(f"😀😀room:{room.name}")
+
+
+            resp={"userdata":serializer.data,
                     "name":str(user.username),
-                    "rooms_created":[]
-                },status=status.HTTP_200_OK)
-        
+                    "rooms_member":member_room_lst
+                }
+            ##
+            if serializer_room :
+                resp["rooms_created"]=[r["name"] for r in serializer_room.data],
+            else:
+                resp["rooms_created"]=[]
+            
+            
+            
+            return Response(resp,status=status.HTTP_200_OK)
+            
         else:
             return Response({
                 "errors":serializer.errors

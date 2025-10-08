@@ -5,10 +5,11 @@ from django.conf import settings
 from ..views import admin_views as av
 from ..views import room_views as rv
 from ..views import message_views as mv
-from ..views import reaction_views as rcv
+# from ..views import reaction_views as rcv
 from ..views import emoji_views as ev
 from ..views import profile_views as pv
 from ..views import topic_views as tv
+from ..views import chroma as cv
 
 urlpatterns=[
     path("user-details/",av.UserApiview.as_view()),
@@ -23,19 +24,21 @@ urlpatterns=[
     #message views
     path("rooms/<int:pk>/messages/",mv.MessageApiview.as_view()),
     ##reaction views
-    path("messages/<int:pk>/reaction/<int:q>/",rcv.ReactionApiview.as_view()),
+    # path("messages/<int:pk>/reaction/<int:q>/",rcv.ReactionApiview.as_view()),
 
     ##emoji views
-    path("messages/<int:pk>/emoji/<int:q>/",ev.EmojiApiview.as_view()),
+    # path("messages/<int:pk>/emoji/<int:q>/",ev.EmojiApiview.as_view()),
 
 
     ##userprofile view
-    path("userprofile/<int:pk>/",pv.UserProfileApiview.as_view()),
+    path("userprofile/<str:q>/",pv.UserProfileApiview.as_view()),
 
 
     ##topic view
 
     path("topics/",tv.TopicApiview.as_view()),
+
+    path("prediction/",cv.topk),
 ]
 
 

@@ -9,11 +9,12 @@ from django.contrib.auth.models import User
 
 from ..models.room_model import Room
 from ..serializers.room_serializer import RoomSerializer,RoomSerializerForCreation
+from .chroma import collection
 
 
 @api_view(['GET'])
 def listRooms(request):
-    #write serilizer to limit fields
+    # write serilizer to limit fields
     qs=Room.objects.all()
     
 
@@ -58,6 +59,16 @@ class RoomApiview(APIView):
         if serializer.is_valid():
             serializer.save()
             print(f"Serializer data{serializer.data}")
+
+            #add to db
+            collection.add(
+                ids=["90"],
+                documents=[
+                    f"name={serializer.data["name"]} description={serializer.data["description"]}" 
+                ]
+            )
+
+
             return Response({
                 "roomdata":serializer.data,
                 "message":"Room created"

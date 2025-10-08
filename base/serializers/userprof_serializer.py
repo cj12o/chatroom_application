@@ -9,14 +9,12 @@ class UserProfSerializer(serializers.ModelSerializer):
         fields='__all__'
 
 
+"""used to serialize a users created room """
 class RoomsCreatedSerializer(serializers.ModelSerializer):
     class Meta:
         model=Room
         fields=['name']
 
-class RoomsParticipatedSerializer(serializers.ModelSerializer):
-    class Meta:
-        model=Message
-        fields=['author']
+
 
 
