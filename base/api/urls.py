@@ -10,6 +10,7 @@ from ..views import emoji_views as ev
 from ..views import profile_views as pv
 from ..views import topic_views as tv
 from ..views import chroma as cv
+from ..views import history_views as hv
 
 urlpatterns=[
     path("user-details/",av.UserApiview.as_view()),
@@ -39,6 +40,9 @@ urlpatterns=[
     path("topics/",tv.TopicApiview.as_view()),
 
     path("prediction/",cv.topk),
+
+    ##history
+    path("sethistory/",hv.setHistory)
 ]
 
 

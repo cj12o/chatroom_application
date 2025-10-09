@@ -4,7 +4,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
 from ..models.room_model import Room
-chroma_client = chromadb.HttpClient(host='localhost', port=8000)
+# chroma_client = chromadb.HttpClient(host='localhost', port=8000)
 
 collection=None
 
@@ -47,10 +47,10 @@ def populate():
         print(f"Error:{str(e)}")
 
 
-try:
-    collection=chroma_client.get_collection("rooms")
-    chroma_client.delete_collection("rooms")
-    populate()
-except Exception:
-    collection=chroma_client.create_collection("rooms")
-    populate()
+# try:
+#     collection=chroma_client.get_collection("rooms")
+#     chroma_client.delete_collection("rooms")
+#     populate()
+# except Exception:
+#     collection=chroma_client.create_collection("rooms")
+#     populate()
