@@ -7,6 +7,7 @@ from rest_framework.authentication import TokenAuthentication
 from ..models.user_history_model import History
 from datetime import datetime
 from django.contrib.auth.models import User
+from ..models import Room
 
 
 @api_view(['POST'])
@@ -15,24 +16,40 @@ from django.contrib.auth.models import User
 def setHistory(request):
     try:
     # data={'data': [{'id': 3, 'date': '9/10/2025, 8:05:03 pm'}, {'id': 4, 'date': '9/10/2025, 8:05:04 pm'}]}
+       
         data=request.data
-        rooms_visited=[]
-        created_at=None
+        print(f"✅✅data:{data}")
+        rooms_visited_lst=[]
+        session=data["data"]["sessionId"]
+        print(f"✅✅sessioId:{session}")
         user=User.objects.get(id=request.user.id)
-        for obj in data["data"]:
-            #order by date desc ->insert is used
-            rooms_visited.insert(0,obj["id"])
-            created_at=obj["date"]
 
-        created_at=datetime.strptime(created_at, '%m/%d/%Y, %I:%M:%S %p')
-        new_entry=History.objects.create(user=user,rooms_visited=rooms_visited,created_at=created_at)
-        if new_entry:
-            return Response({
-                "message":"succesfully submitted history"
-            },status=status.HTTP_200_OK)
-        else:
-            return Response({
-                "message":"error  in submitting history"
-            },status=status.HTTP_400_BAD_REQUEST)
+        room_data={}  #id:time_spent_total
+
+        for obj in data["data"]["visited_rooms"]:
+            #order by date desc ->insert is used
+            room_id=obj["id"]
+            time_spent_room=obj["timespent"]
+
+            if room_id in rooms_visited_lst:
+                room_data[room_id]=int(time_spent_room)+room_data[room_id]
+            else:   
+                rooms_visited_lst.append(room_id)
+                room_data[room_id]=int(time_spent_room)
+                
+
+        for k,v in room_data.items():
+            room=Room.objects.get(id=k)
+            History.objects.create(user=user,session=session,rooms_visited=room,time_spent=v)
+
+        return Response({
+            "message":"succesfully submitted history"
+        },status=status.HTTP_200_OK)
     except Exception as e:
-        print(f"❌❌error:{str(e)}")
+        print(f"❌❌Error:{str(e)}")
+        return Response({
+            "message":"error in submitting history",
+            "error":str(e)
+        },status=status.HTTP_400_BAD_REQUEST) 
+
+

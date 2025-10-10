@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 
 from ..models.room_model import Room
 from ..serializers.room_serializer import RoomSerializer,RoomSerializerForCreation
-from .chroma import collection
+from .userRecommendation.chroma import collection
 
 
 @api_view(['GET'])
