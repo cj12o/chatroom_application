@@ -41,12 +41,14 @@ urlpatterns=[
 
     path("topics/",tv.TopicApiview.as_view()),
 
-    path("prediction/",cv.topk),
+    # path("prediction/",cv.topk),
 
     ##history
     path("sethistory/",hv.setHistory),
 
-    path("tester/",tools.get_userHistory)
+    # path("tester/",tools.get_userHistory)
+    path("is_online/",rv.getOnlineusers),
+
 ]
 
 

@@ -8,8 +8,9 @@ from rest_framework.authentication import TokenAuthentication,BaseAuthentication
 from django.contrib.auth.models import User
 
 from ..models.room_model import Room
+from ..models.userprofile_model import UserProfile
 from ..serializers.room_serializer import RoomSerializer,RoomSerializerForCreation
-from .userRecommendation.chroma import collection
+# from .userRecommendation.chroma import collection
 
 
 @api_view(['GET'])
@@ -61,12 +62,12 @@ class RoomApiview(APIView):
             print(f"Serializer data{serializer.data}")
 
             #add to db
-            collection.add(
-                ids=["90"],
-                documents=[
-                    f"name={serializer.data["name"]} description={serializer.data["description"]}" 
-                ]
-            )
+            # collection.add(
+            #     ids=["90"],
+            #     documents=[
+            #         f"name={serializer.data["name"]} description={serializer.data["description"]}" 
+            #     ]
+            # )
 
 
             return Response({
@@ -83,6 +84,7 @@ class RoomApiview(APIView):
         data=request.data
         room=Room.objects.get(Q(author__username=request.user)&Q(id=data["id"]))
         serializer=RoomSerializerForCreation(data=data,instance=room,partial=True)
+
         if serializer.is_valid():
             serializer.save()
             return Response({
@@ -125,8 +127,28 @@ class RoomApiview(APIView):
             "message":"error in Room deletion"
         },status=status.HTTP_400_BAD_REQUEST)
     
+
+@api_view(['GET'])
+def getOnlineusers(request):
+    """
+    id+name
+    get online users 
+    """ 
+    users=UserProfile.objects.filter(is_online=True)       
+    # if request.GET.get('room_id'):
+    #    room_id=int(request.GET.get('room_id'))
+    #    room=Room.objects.filter(id=room_id)
+    #    onlineUsers=room.room_members.all()
+    #    return Response({
+    #         "is_online":[user.username for user in onlineUsers]
+    #    })
     
-        
+    return Response({
+        "is_online":[user.user.username for user in users]
+    })
+
+
+    
     
 
     

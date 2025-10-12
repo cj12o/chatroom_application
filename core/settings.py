@@ -31,6 +31,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -71,8 +72,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'core.wsgi.application'
-
+# WSGI_APPLICATION = 'core.wsgi.application'
+ASGI_APPLICATION = "core.asgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -137,3 +138,8 @@ STATICFILES_DIRS=(BASE_DIR/'static',)
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+    }
+}
