@@ -1,11 +1,13 @@
 from rest_framework import serializers
-from ..models.message_model import Message,Reaction
+from ..models.message_model import Message
 
 
 
 class MessageSerializerForCreation(serializers.ModelSerializer):
     author=serializers.SerializerMethodField()
     room=serializers.SerializerMethodField()
+    images_msg=serializers.SerializerMethodField()
+    file_msg=serializers.SerializerMethodField()
     # reactions=serializers.SerializerMethodField()
 
     class Meta:
@@ -18,17 +20,13 @@ class MessageSerializerForCreation(serializers.ModelSerializer):
     def get_room(self,obj):
         return obj.room.name
     
-    # def get_reactions(self,obj):
-    #     reactions=reactions=obj.message_reaction.all
-    #     return [
-    #         {
-    #             "id": r.id,
-    #             "author": r.author.username,
-    #             "emoji": r.emoji,
-    #             "created_at": r.created_at,
-    #         }
-    #         for r in reactions
-    #     ]
+    def get_images_msg(self,obj):
+        return "http://127.0.0.1:8000"+obj.images_msg.url
+    
+    def get_file_msg(self,obj):
+        return "http://127.0.0.1:8000"+obj.file_msg.url
+
+    
 
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:

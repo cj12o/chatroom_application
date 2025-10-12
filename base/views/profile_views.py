@@ -12,15 +12,13 @@ from ..models.userprofile_model import UserProfile
 from ..models.room_model import Room
 
 class UserProfileApiview(APIView):
-    permission_classes=[IsAuthenticated]
-    authentication_classes=[TokenAuthentication]
 
     """get user profile pk is userid"""
 
-    def get_permissions(self):
-        if self.request.method=="GET":
-            return []
-        else: return [IsAuthenticated()]
+    # def get_permissions(self):
+    #     if self.request.method=="GET":
+    #         return []
+    #     else: return [IsAuthenticated()]
 
     def get(self,request,q):
         user=User.objects.get(username=q)
@@ -34,30 +32,38 @@ class UserProfileApiview(APIView):
         serializer=UserProfSerializer(userprofile,many=True,context={'request':request})
         if serializer:
             #####
-
-
             rooms=Room.objects.filter(Q(author__username=q))
             serializer_room=RoomsCreatedSerializer(rooms,many=True)
-            
+
             ###member
-            member_room=user.room_member.filter()
+            member_room=user.room_member.all()
             # print(f"✅✅memeber of rooms:{member_room}")
             
 
             member_room_lst=[]
             if member_room:
                 for room in member_room:
-                    member_room_lst.append(room.name)
+                    dct={}
+                    dct["name"]=room.name
+                    dct["id"]=room.id
+                    member_room_lst.append(dct)
                     # print(f"😀😀room:{room.name}")
 
 
             resp={"userdata":serializer.data,
                     "name":str(user.username),
-                    "rooms_member":member_room_lst
-                }
+                    "rooms_member":member_room_lst,
+                    "email":user.email
+                 }
             ##
             if serializer_room :
-                resp["rooms_created"]=[r["name"] for r in serializer_room.data],
+                lst=[]
+                for room in serializer_room.data:
+                    dct={}
+                    dct["name"]=room["name"]
+                    dct["id"]=room["id"]
+                    lst.append(dct)
+                resp["rooms_created"]=lst
             else:
                 resp["rooms_created"]=[]
             

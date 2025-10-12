@@ -22,25 +22,10 @@ class LoginApiview(APIView):
         serializer=AdminLoginSerializer(data=data) 
         if serializer.is_valid():
             user=User.objects.get(Q(email=data["email"]))
-            userprofile=UserProfile.objects.filter(Q(user__email=data["email"]))
-            serializer_2=UserProfSerializer(userprofile,many=True)
             token,created=Token.objects.get_or_create(user=user) 
-            # print(f"{token}")
-
-            # if len(serializer_2.data)>0:
-            #     print(f"✅✅Serializer:{serializer_2}")
-            #     serializer_2.data[0]['profile_pic']=f"http://127.0.0.1:8000"+serializer_2.data[0]['profile_pic']
-            #     return Response({
-            #         "userdata":serializer.data,
-            #         "profile":serializer_2.data,
-            #         "name":str(user.username),
-            #         "token":token.key,
-            #         "message":"Admin logged in "
-            #     },status=status.HTTP_200_OK)
-            # else:
+            
             return Response({
             "userdata":serializer.data,
-            "profile":[],
             "name":str(user.username),
             "token":token.key,
             "message":"Admin logged in "
@@ -74,7 +59,6 @@ class SignUpApiview(APIView):
         data=request.data
         serializer=SignupSerializer(data=data)
         if serializer.is_valid():
-            # print(serializer.data)
             serializer.save()
             return Response({
                 "userdata":serializer.data,
@@ -84,6 +68,8 @@ class SignUpApiview(APIView):
         return Response({
             "errors":serializer.errors
         },status=status.HTTP_400_BAD_REQUEST)
+
+   
 
 
 class UserApiview(APIView):

@@ -19,11 +19,11 @@ def listRooms(request):
     qs=Room.objects.all()
     
 
-    if request.GET.get('search'):
-        param=request.GET.get('search')
+    if request.GET.get('id'):
+        param=request.GET.get('id')
         print(f"Params:{param}")
 
-        qs=qs.filter(Q(author__username__icontains=param)|Q(name__icontains=param)|Q(description__icontains=param)|Q(topic__icontains=param))
+        qs=qs.filter(Q(id=param))
     
 
     serializer=RoomSerializer(qs,many=True)
@@ -58,7 +58,14 @@ class RoomApiview(APIView):
             'request':user
         })
         if serializer.is_valid():
-            serializer.save()
+            room=serializer.save()
+            if "moderator" in data:
+                for moderator in data["moderator"]:
+                    mod=User.objects.get(username=moderator)
+                    room.moderator.add(mod)
+            else:
+                room.moderator.add(user)
+            room.save()
             print(f"Serializer data{serializer.data}")
 
             #add to db
@@ -129,12 +136,15 @@ class RoomApiview(APIView):
     
 
 @api_view(['GET'])
-def getOnlineusers(request):
+def getOnlineusers(request,pk):
+
+    # TODO Room filter
     """
     id+name
     get online users 
     """ 
-    users=UserProfile.objects.filter(is_online=True)       
+    room=Room.objects.get(id=pk)
+    users=room.members.all()
     # if request.GET.get('room_id'):
     #    room_id=int(request.GET.get('room_id'))
     #    room=Room.objects.filter(id=room_id)
@@ -142,9 +152,10 @@ def getOnlineusers(request):
     #    return Response({
     #         "is_online":[user.username for user in onlineUsers]
     #    })
+    print(f"users{users}")
     
     return Response({
-        "is_online":[user.user.username for user in users]
+        "is_online":[[user.username,user.id,UserProfile.objects.get(user__username=user.username).is_online] for user in users]
     })
 
 

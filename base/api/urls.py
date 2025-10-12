@@ -47,7 +47,8 @@ urlpatterns=[
     path("sethistory/",hv.setHistory),
 
     # path("tester/",tools.get_userHistory)
-    path("is_online/",rv.getOnlineusers),
+    path("is_online/<int:pk>/",rv.getOnlineusers),
+    
 
 ]
 

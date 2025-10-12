@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.db.models import Q
 
 from django.contrib.auth.models import User
-
+from ..models.userprofile_model import UserProfile
 # Notes :we only write validate for post
 
 class UserSerializer(serializers.Serializer):
@@ -102,9 +102,11 @@ class SignupSerializer(serializers.Serializer):
     def create(self,validated_data):
         user=User.objects.create(username=validated_data["username"],email=validated_data["email"])
         user.set_password(validated_data["password"])
-
         user.save()
-        print(user)
+
+        #by def user profile creation
+        UserProfile.objects.create(user=user)
+        
         return user
 
 
