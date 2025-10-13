@@ -33,7 +33,7 @@ class RoomSerializer(serializers.ModelSerializer):
                 dct["status"]=member.profile.is_online
                 lst.append(dct)
 
-            print(f"😀😀lst{lst}")
+            # print(f"😀😀lst{lst}")
             return lst
         except User.DoesNotExist:
             return []

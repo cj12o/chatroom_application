@@ -13,21 +13,40 @@ from ..serializers.room_serializer import RoomSerializer,RoomSerializerForCreati
 # from .userRecommendation.chroma import collection
 
 
-@api_view(['GET'])
+@api_view(['POST'])
 def listRooms(request):
+    """
+    Purpose->return all rooms list
+    Input->1){} or {"topic":" "} returns full list
+           2){"topic":"parent_topic"} returns filtered
+
+    attached->home page
+    """
+
     # write serilizer to limit fields
     qs=Room.objects.all()
-    
+
+    ##FOR PARENT TOPIC FILTERING
+    if "topic" in request.data and request.data["topic"].strip()!="":
+        topic=request.data["topic"]
+        qs=qs.filter(Q(parent_topic__topic=topic))
+        # print(f"QS:{qs}")
+        if len(qs)<1:
+            return Response({
+            "rooms":[],
+            "message":"list of Rooms"
+        },status=status.HTTP_200_OK)
+        
+    """for specific room"""
 
     if request.GET.get('id'):
         param=request.GET.get('id')
-        print(f"Params:{param}")
 
         qs=qs.filter(Q(id=param))
     
 
     serializer=RoomSerializer(qs,many=True)
-    print(f"✅✅Serializers:{serializer.data}")
+    # print(f"✅✅Serializers:{serializer.data}")
     if len(serializer.data)<1:
         return Response({
             "message":"No matching keywords"
