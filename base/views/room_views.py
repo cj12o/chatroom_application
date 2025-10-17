@@ -1,5 +1,6 @@
 from rest_framework.views import APIView
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view,permission_classes,authentication_classes
+from asgiref.sync import sync_to_async
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Q
@@ -10,7 +11,44 @@ from django.contrib.auth.models import User
 from ..models.room_model import Room
 from ..models.userprofile_model import UserProfile
 from ..serializers.room_serializer import RoomSerializer,RoomSerializerForCreation
-# from .userRecommendation.chroma import collection
+
+
+# from .userRecommendation.chroma import getRecommendation
+
+
+
+
+
+class UserRecommendation(APIView):
+    permission_classes=[IsAuthenticated]
+    authentication_classes=[TokenAuthentication]
+    # def get(self,request):
+    #     """
+    #     fetches data from llm recomm 
+    #     """
+    #     #Todo:if new user
+    #     print(f"REquet:{request.user}")
+    #     recom_lst=getRecommendation(request.user.username)
+    #     # print(recom_lst)
+    #     name_lst=[obj["name"] for obj in recom_lst]
+    #     print(name_lst)
+    #     rooms=Room.objects.filter(Q(name__in=name_lst))
+    #     serializer=RoomSerializer(rooms,many=True)
+    #     print(f"✅✅serilizer:{serializer}")
+    #     if serializer.data:
+    #         return Response({
+    #             "rooms":serializer.data,
+    #             "reason":[obj["reason"] for obj in recom_lst],
+    #             "message":"list of Rooms recommendations"
+    #         },status=status.HTTP_200_OK)
+    #     else:
+    #         return Response({
+    #             # "error":serializer.errors,
+    #             "message":"error in fetching room recommendations"
+    #         },status=status.HTTP_400_BAD_REQUEST)
+        
+            
+
 
 
 @api_view(['POST'])
@@ -44,9 +82,10 @@ def listRooms(request):
 
         qs=qs.filter(Q(id=param))
     
-
+   
     serializer=RoomSerializer(qs,many=True)
     # print(f"✅✅Serializers:{serializer.data}")
+
     if len(serializer.data)<1:
         return Response({
             "message":"No matching keywords"

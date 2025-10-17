@@ -1,5 +1,6 @@
 
-from  channels.generic.websocket import AsyncWebsocketConsumer
+# from  channels.generic.websocket import AsyncWebsocketConsumer
+from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.contrib.auth.models import User
 from base.models.userprofile_model import UserProfile
 from base.models.room_model import Room
@@ -48,10 +49,33 @@ saveToDb=database_sync_to_async(saveToDb)
 
 
 
-class ChatConsumer(AsyncWebsocketConsumer):
+class ChatConsumer(AsyncJsonWebsocketConsumer):
+
+    async def user_status_update(self,event):
+        """methos that on connect and disconnect send jsn msg to update status"""
+        await self.send_json(content=event)
+
+
+    async def chat_message(self, event):
+        try:
+            """Called when a message is sent to the group"""
+            print(f"❌❌❌Event:{event}")
+            message = event["message"]
+            # await self.send(text_data=f"Received: {message}")
+            await self.send_json(content=event)
+        except Exception as e:
+            print(f"User error in chat message:{e}")
+            
     async def connect(self):
         try:
             await self.accept()
+            print(f"User:{self.scope["username"]}")
+
+            if self.scope["username"]==None:
+                await self.close()
+                return
+
+            # print(f"user:{self.scope["username"]}")
             self.room_id = self.scope["url_route"]["kwargs"]["q"]
             self.room_name = await get_room_name(int(self.room_id))
             self.room_group = f"room_{self.room_id}"
@@ -61,20 +85,35 @@ class ChatConsumer(AsyncWebsocketConsumer):
                 self.channel_name
             )
 
-            print(f"✅ Connected: {self.channel_name} joined {self.room_group}")
-        except Exception as e:
-            print(f"❌ Error in connect: {e}")
-
-    async def receive(self, text_data):
-        try:
-            print(f"📩 Received from {self.channel_name}: {text_data}")
-
-            # Instead of sending directly, broadcast to the group:
             await self.channel_layer.group_send(
                 self.room_group,
                 {
                     "type": "chat_message",
-                    "message": text_data,
+                    "message": "user_status_update",   
+                    "username":self.scope["username"],
+                    "status": True
+                }
+            )
+
+            print(f"✅ Connected: {self.channel_name} joined {self.room_group}")
+            await maintain_user_visibility(username=self.scope["username"],flag=True)
+        except Exception as e:
+            print(f"❌ Error in connect: {e}")
+
+
+    async def receive(self, text_data):
+        try:
+            # print(f"Scope:{self.scope}")
+            print(f"📩 Received from {self.channel_name}: {text_data}")
+
+            # broadcast to  group:
+            await self.channel_layer.group_send(
+                self.room_group,
+                {
+                    "type": "chat_message",
+                    "message": text_data,   
+                    "username":self.scope["username"],
+                    # "status": True
                 }
             )
             
@@ -87,15 +126,28 @@ class ChatConsumer(AsyncWebsocketConsumer):
         except Exception as e:
             print(f"❌ Error in receive: {e}")
 
-    async def chat_message(self, event):
-        """Called when a message is sent to the group"""
-        message = event["message"]
-        await self.send(text_data=f"Received: {message}")
+    
 
     async def disconnect(self, close_code):
+        try:
+            if self.scope["username"]!=None:
+                await maintain_user_visibility(username=self.scope["username"],flag=False)
 
-        await self.channel_layer.group_discard(
-            self.room_group,
-            self.channel_name
-        )
-        print(f"🔴 Disconnected: {self.channel_name} from {self.room_group}")
+                await self.channel_layer.group_send(
+                    self.room_group,
+                    {
+                        "type": "chat_message",
+                        # "message": "user_status_update",   
+                        "username":self.scope["username"],
+                        "status": False
+                    }
+                )
+
+                await self.channel_layer.group_discard(
+                    self.room_group,
+                    self.channel_name
+                )
+            
+                print(f"🔴 Disconnected: {self.channel_name} from {self.room_group}")
+        except Exception as e:
+            print(f"Error in disconnect :{str(e)}")

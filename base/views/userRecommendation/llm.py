@@ -19,36 +19,31 @@ llm=ChatOpenAI(
 
 llm_structured_op=llm.with_structured_output(RespFormat)
 
-template = ChatPromptTemplate.from_messages(
-    [
-        ("system", """
+template = ChatPromptTemplate.from_messages([
+    ("system", """
+Role: You are a chatroom recommender.
 
-        Role:You are a chatroom recommender .
+Available rooms (List_of_rooms): {room_lst}
+User history: {user_history_lst}
+     
 
-        List_of_rooms:{room_lst}
-         
-        User_history:{user_history_lst}
-         
-        List_of_rooms contains room_name ,room_id,room_description
-        User_history contains room_name ,room_id,description
-      
+Rules:
+1) Only pick rooms from List_of_rooms. Do NOT invent new rooms.
+2) Give at least 4 recommendations.
+3) Sort recommendations in decreasing order of importance.
+4) Provide a short reason for each recommendation based on User history.
+5) Refer to the user as "you" in explanations.
 
-         
-        Follow these rules :
-        1)Give recommendation by matching  room_description from both List_of_rooms and User_history
-        2)at least 4 recommendations 
-        3)recommendation sorted in decreasing order of importance
-        and provide short reason for selecting it
-        4)instead of user use you
-        """),
-    ]
-)
 
+""")
+])
 
 
 
 def Recommend(room_list:list,user_history:list): 
-    
+    # print(f"Room list:{room_list}")
+    # print(f"user  hist:{user_history}")
+
     room_str="\n".join(f"room_id:{dct["id"]} room_name:{dct["name"]} room_description:{dct["description"]}" for dct in room_list)
     user_hist_str="\n".join(f"room_id:{dct["id"]} room_name:{dct["name"]} room_description:{dct["description"]}" for dct in room_list)
     
@@ -66,7 +61,7 @@ def Recommend(room_list:list,user_history:list):
         dct["reason"]=response.recommendation[i].reason
         # print(f"✅✅LLm response:{response.recommendation[0].room_name}")
         lst.append(dct)
-    print(lst)
-    # return lst
+    # print(lst)
+    return lst
     
 

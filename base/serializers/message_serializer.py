@@ -15,17 +15,27 @@ class MessageSerializerForCreation(serializers.ModelSerializer):
         fields='__all__'
 
     def get_author(self,obj):
-        return obj.author.username
+        dct={"username":obj.author.username,"id":obj.author.id}
+        return dct
     
     def get_room(self,obj):
         return obj.room.name
     
     def get_images_msg(self,obj):
-        return "http://127.0.0.1:8000"+obj.images_msg.url
+        try:
+            return "http://127.0.0.1:8000"+obj.images_msg.url
+        except Exception as e:
+            pass
+        finally:
+            return None
     
     def get_file_msg(self,obj):
-        return "http://127.0.0.1:8000"+obj.file_msg.url
-
+        try:
+            return "http://127.0.0.1:8000"+obj.file_msg.url
+        except Exception as e:
+            pass
+        finally:
+            return None
     
 
 class MessageSerializer(serializers.ModelSerializer):

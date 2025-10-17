@@ -21,8 +21,8 @@ def getRoomDet(topK:int,session_lst:list)->list:
 
 
 #Method that return top k or less session
-def gettopksesh()->list:
-    getTopsesh=History.objects.filter(Q(user__username='chitransh')).order_by('-created_at')
+def gettopksesh(username:str)->list:
+    getTopsesh=History.objects.filter(Q(user__username=username)).order_by('-created_at')
 
     sesh_lst=[]
     for obj in getTopsesh:

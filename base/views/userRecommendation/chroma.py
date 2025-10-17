@@ -3,6 +3,7 @@ import asyncio
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
+from asgiref.sync import sync_to_async
 
 from ...models import Room
 from ...models import Topic
@@ -10,8 +11,10 @@ from .helper import gettopksesh
 from .llm import Recommend
 
 
+
 #TODO: optimize timestampwise fetch and check vector are not redundant
 chroma_client = chromadb.HttpClient(host='localhost', port=8000)
+
 
 try:
     if chroma_client.get_collection("all_rooms_data"):
@@ -113,9 +116,17 @@ def populate():
             metadatas=[{"room name":name,"room id":id}]
         )
     print("✅✅Embeddings created")
-    room_lst=gettopksesh()#user hisstory
-    recom_lst=cosSimList(room_lst=room_lst)#similar room
-    Recommend(room_list=recom_lst,user_history=room_lst)
+
+ 
+
+def getRecommendation(username:str):
+    # print(f"user:{username}")
+    room_lst=gettopksesh(username=username)#user hisstory
+    # print(f"✅room_lst:{room_lst}")
+    recom_lst= cosSimList(room_lst=room_lst)#similar room
+    # print(f"✅recom_lst:{recom_lst}")
+    result_lst=Recommend(room_list=recom_lst,user_history=room_lst)
+    return result_lst
 
 
 populate()

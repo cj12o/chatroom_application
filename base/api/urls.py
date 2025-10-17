@@ -11,7 +11,7 @@ from ..views import profile_views as pv
 from ..views import topic_views as tv
 from ..views.userRecommendation import chroma as cv
 from ..views import history_views as hv
-
+# from ..views import recommendation_views as rev
 from ..views.llm import tools 
 
 urlpatterns=[
@@ -22,16 +22,16 @@ urlpatterns=[
 
     #ROOM VIEWS
     path("rooms/list/",rv.listRooms),
+    #User recommendation
+    path("rooms/recommend/",rv.UserRecommendation.as_view()),
+    #recomm save
+    # path("rooms/saveRecomm/",rev.saveRecommendation.as_view()),
+
     path("rooms/operations/",rv.RoomApiview.as_view()),
 
     #message views
     path("rooms/<int:pk>/messages/",mv.MessageApiview.as_view()),
-    ##reaction views
-    # path("messages/<int:pk>/reaction/<int:q>/",rcv.ReactionApiview.as_view()),
-
-    ##emoji views
-    # path("messages/<int:pk>/emoji/<int:q>/",ev.EmojiApiview.as_view()),
-
+    
 
     ##userprofile view
     path("userprofile/<str:q>/",pv.UserProfileApiview.as_view()),
