@@ -5,12 +5,31 @@ from rest_framework.permissions import IsAuthenticated,AllowAny
 from rest_framework.authentication import TokenAuthentication,BaseAuthentication
 from rest_framework import status
 from django.db.models import Q
-
+from rest_framework.decorators import api_view
 
 from ..serializers.message_serializer import MessageSerializerForCreation,MessageSerializer
 from ..models.message_model import Message
 from ..models.room_model import Room
 
+
+
+def helper(id:int,lst:list):
+    message=Message.objects.get(id=id)
+    d={"id":message.id,"author":message.author.username,"message":message.message,"children":[]}
+    lst.append(d)
+    # dct[id]=d
+    try:
+        print("children:",message.parent_message.all())
+        if message.parent_message.all():   
+            for m in message.parent_message.all():
+                print(f"❌❌Child if:{m}")
+                helper(m.id,lst[len(lst)-1]["children"])
+    except Exception as e:
+        # dct[id]={}
+        print(f"❌❌Error:{e}")
+        # return {}
+    
+       
 
 
 class MessageApiview(APIView):
@@ -54,38 +73,21 @@ class MessageApiview(APIView):
         },status=status.HTTP_400_BAD_REQUEST)   
     
 
-    """get all message  {{base}}rooms/2/messages/?search=4 (specific also)"""
     def get(self,request,pk):
-        
-        # print(f"✅✅Room id=>{pk}")
-        msg=Message.objects.filter(Q(room__id=pk))
-        if request.GET.get("search"):
-            print(f'search={request.GET.get("search")}')
-            message_id=request.GET.get("search")
-            msg=Message.objects.filter(Q(id=message_id))
+        messages=Message.objects.filter(Q(parent=None))
+        # dct={}
+        lst=[]
+        for m in messages:
+            helper(m.id,lst)
+        # lst=[v for k,v in dct.items()]
 
-        
-        # print(f"✅✅messag qs:{msg}")
+        print(f"✅✅Final dcyt:{lst}")
 
-        if not msg:
-            return Response({
-                "msg_lst":"empty room",
-                "message":"error in posting msg"
-            },status=status.HTTP_200_OK) 
-        
 
-        serializer=MessageSerializerForCreation(msg,many=True)
-
-        if serializer.data:
-            # print(f"✅✅Serializer{serializer.data}")
-            return Response({
-                "messages":serializer.data
-            },status=status.HTTP_200_OK)
 
         return Response({
-            "error":serializer.errors,
-            "message":"error in posting msg"
-        },status=status.HTTP_400_BAD_REQUEST) 
+            "messages":lst
+        },status=status.HTTP_200_OK)
    
     """pk is message id"""
     def delete(self,request,pk):
@@ -134,5 +136,4 @@ class MessageApiview(APIView):
     #         "error":serializer.errors,
     #         "message":"error in updating msg"
     #     },status=status.HTTP_400_BAD_REQUEST)       
-
 

@@ -3,11 +3,13 @@ from ..models.message_model import Message
 
 
 
-class MessageSerializerForCreation(serializers.ModelSerializer):
+class MessageSerializerForCreation(serializers.Serializer):
     author=serializers.SerializerMethodField()
     room=serializers.SerializerMethodField()
     images_msg=serializers.SerializerMethodField()
     file_msg=serializers.SerializerMethodField()
+    parent=serializers.SerializerMethodField()
+    children=serializers.SerializerMethodField()
     # reactions=serializers.SerializerMethodField()
 
     class Meta:
@@ -37,7 +39,12 @@ class MessageSerializerForCreation(serializers.ModelSerializer):
         finally:
             return None
     
-
+    def get_children(self,obj):
+        try:
+            return [ob.id for ob in obj.parent_message.all()]
+        except Exception as e:
+            return []
+    
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model=Message

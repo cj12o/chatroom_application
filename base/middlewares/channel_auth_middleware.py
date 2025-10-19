@@ -27,6 +27,7 @@ class TokenAuthChannelMiddleware(BaseMiddleware):
     
     async def __call__(self,scope,receive,send):
         try:
+            print(scope)
             token=scope["query_string"].decode()
             token=token[6:len(token)]
 
