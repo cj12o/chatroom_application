@@ -14,6 +14,8 @@ from ..views import history_views as hv
 # from ..views import recommendation_views as rev
 from ..views.llm import tools 
 
+from ..views import vote_views as vv
+
 urlpatterns=[
     path("user-details/",av.UserApiview.as_view()),
     path("admin-login/",av.LoginApiview.as_view()),
@@ -49,7 +51,8 @@ urlpatterns=[
     # path("tester/",tools.get_userHistory)
     path("is_online/<int:pk>/",rv.getOnlineusers),
     
-
+    #vote path temp
+    path("votes/<int:pk>/",vv.voteApiview.as_view())
 ]
 
 

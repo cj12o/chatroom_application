@@ -4,7 +4,7 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.contrib.auth.models import User
 from base.models.userprofile_model import UserProfile
 from base.models.room_model import Room
-from base.models.message_model import Message
+from base.models.message_model import Message,Vote
 from channels.db import database_sync_to_async
 import json 
 # example scope=>
@@ -12,6 +12,27 @@ import json
 
 # TODO: add voice + file
 
+def vote_operation(vote_author:str,message_id:int,vote_type:str,room_id:int,status:str):
+    try:
+        user=User.objects.get(username=vote_author)
+        room=Room.objects.get(id=room_id)
+        msg=Message.objects.get(id=message_id)
+        print(f"✅✅status:{status}")
+        if status=="subtractVote":
+            vote=Vote.objects.get(user__username=user.username,room__name=room.name,message__id=msg.id)
+            vote.delete()
+            print("❌deleted vote")
+            return True
+        else:
+            vote_choice=1
+            if vote_type=="downvote":
+                vote_choice=-1
+            vote=Vote.objects.create(user=user,message=msg,room=room,vote=vote_choice)
+            print("✅addded vote")
+            return True
+    except Exception as e:
+        print(f"❌❌Error in vote operation:{e}")
+        return False
 
 def maintain_user_visibility(username:str,flag:bool):
     """
@@ -38,6 +59,7 @@ def saveToDb(room_id:int,username:str,message:str,reactions:list=[],parent:int=N
         msg.parent=parent_msg
     
     msg.save()
+    return msg.id
 
 
     
@@ -46,7 +68,7 @@ def saveToDb(room_id:int,username:str,message:str,reactions:list=[],parent:int=N
 maintain_user_visibility=database_sync_to_async(maintain_user_visibility)
 get_room_name=database_sync_to_async(get_room_name)
 saveToDb=database_sync_to_async(saveToDb)
-
+vote_operation=database_sync_to_async(vote_operation)
 
 
 
@@ -90,7 +112,8 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                 self.room_group,
                 {
                     "type": "chat_message",
-                    "message": "user_status_update",   
+                    "task":"user_status_update",
+                    "message":"",   
                     "username":self.scope["username"],
                     "status": True
                 }
@@ -112,24 +135,68 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             print(data)
 
 
-            # broadcast to  group:
-            await self.channel_layer.group_send(
-                self.room_group,
-                {
-                    "type": "chat_message",
-                    "message": data["message"],  
-                    "parent":data["parent"],
-                    "username":self.scope["username"],
-                    # "status": True
-                }
-            )
-            
-            #Add to db
-            room_id=int(self.scope["url_route"]["kwargs"]["q"])
-            username=self.scope["username"]
-            ###no reactions,no parents
-            await saveToDb(room_id=room_id,username=username,message=data["message"],parent=data["parent"])
+            #task is vote operation
+            if "task" in data and data["task"]=="vote":
+                if data["status"]=="subtractVote":
 
+                    operation_done=await vote_operation(data["vote_author"],data["message_id"],data["vote_type"],self.room_id,data["status"])
+
+                    await self.channel_layer.group_send(
+                        self.room_group,
+                        {
+                            "type": "chat_message",
+                            "status":"subtractVote",
+                            "task":"vote",  
+                            "operation_done":operation_done,
+                            "vote_author":data["vote_author"],
+                            "message_id":data["message_id"],
+                            "username":self.scope["username"],
+                            "vote_type":data["vote_type"],
+                        }
+                    )
+
+                elif data["status"]=="addVote":
+                    
+                    operation_done=await vote_operation(data["vote_author"],data["message_id"],data["vote_type"],self.room_id,data["status"])
+
+                    await self.channel_layer.group_send(
+                        self.room_group,
+                        {
+                            "type": "chat_message",
+                            "status":"addVote",
+                            "task":"vote",  
+                            "operation_done":operation_done,
+                            "vote_author":data["vote_author"],
+                            "message_id":data["message_id"],
+                            "username":self.scope["username"],
+                            "vote_type":data["vote_type"]
+                        }
+                    )
+
+                #add to db
+            else:
+            # broadcast to  group:
+                #Add to db
+                room_id=int(self.scope["url_route"]["kwargs"]["q"])
+                username=self.scope["username"]
+                ###no reactions,no parents
+                message_id=await saveToDb(room_id=room_id,username=username,message=data["message"],parent=data["parent"])
+
+
+                await self.channel_layer.group_send(
+                    self.room_group,
+                    {
+                        "type": "chat_message",
+                        "task":"chat",
+                        "message": data["message"],  
+                        "parent":data["parent"],
+                        "username":self.scope["username"],
+                        "message_id":message_id
+                        # "status": True
+                    }
+                )
+                
+                
         except Exception as e:
             print(f"❌ Error in receive: {e}")
 
@@ -144,7 +211,8 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                     self.room_group,
                     {
                         "type": "chat_message",
-                        # "message": "user_status_update",   
+                        "task": "user_status_update",   
+                        "message":"",
                         "username":self.scope["username"],
                         "status": False
                     }

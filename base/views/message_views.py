@@ -8,21 +8,26 @@ from django.db.models import Q
 from rest_framework.decorators import api_view
 
 from ..serializers.message_serializer import MessageSerializerForCreation,MessageSerializer
-from ..models.message_model import Message
+from ..models.message_model import Message,Vote
 from ..models.room_model import Room
 
 
 
 def helper(id:int,lst:list):
     message=Message.objects.get(id=id)
-    d={"id":message.id,"author":message.author.username,"message":message.message,"children":[]}
+    votes=Vote.objects.filter(Q(message__id=message.id))
+    upvotes=votes.filter(Q(vote=1))
+    downvotes=votes.filter(Q(vote=-1))
+    d={"id":message.id,"author":message.author.username,"message":message.message,"upvotes":len(upvotes),"downvotes":len(downvotes),"children":[]}
+
+    
     lst.append(d)
     # dct[id]=d
     try:
-        print("children:",message.parent_message.all())
+        # print("children:",message.parent_message.all())
         if message.parent_message.all():   
             for m in message.parent_message.all():
-                print(f"❌❌Child if:{m}")
+                # print(f"❌❌Child if:{m}")
                 helper(m.id,lst[len(lst)-1]["children"])
     except Exception as e:
         # dct[id]={}

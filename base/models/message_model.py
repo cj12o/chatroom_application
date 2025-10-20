@@ -9,7 +9,17 @@ class Message(models.Model):
     images_msg=models.ImageField(null=True,upload_to="images/")
     file_msg=models.FileField(null=True,upload_to="files/")
     parent=models.ForeignKey(to="self",on_delete=models.CASCADE,null=True,related_name="parent_message")
-    vote=models.SmallIntegerField(default=0,choices=[(1, "Upvote"), (-1, "Downvote")])
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+
+class Vote(models.Model):
+    user=models.ForeignKey(to=User,on_delete=models.CASCADE)
+    message=models.ForeignKey(to=Message,on_delete=models.CASCADE)
+    room=models.ForeignKey(to=Room,on_delete=models.CASCADE)
+    vote=models.SmallIntegerField(choices=[(1,"upvote"),(-1,"downvote")])
+
+    class Meta:
+        constraints=[
+            models.UniqueConstraint(fields=['user', 'message','room'], name='unique_user_message_room_vote')
+        ]
