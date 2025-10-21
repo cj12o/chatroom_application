@@ -14,14 +14,21 @@ from ..models.room_model import Room
 
 
 def helper(id:int,lst:list):
-    message=Message.objects.get(id=id)
-    votes=Vote.objects.filter(Q(message__id=message.id))
-    upvotes=votes.filter(Q(vote=1))
-    downvotes=votes.filter(Q(vote=-1))
-    d={"id":message.id,"author":message.author.username,"message":message.message,"upvotes":len(upvotes),"downvotes":len(downvotes),"children":[]}
-
+    # message=Message.objects.get(id=id)
+    # votes=Vote.objects.filter(Q(message__id=message.id))
+    # upvotes=votes.filter(Q(vote=1))
+    # downvotes=votes.filter(Q(vote=-1))
     
-    lst.append(d)
+    
+    # d={"id":message.id,"author":message.author.username,"message":message.message,"upvotes":len(upvotes),"downvotes":len(downvotes),"children":[]}
+    # lst.append(d)
+
+    message=Message.objects.get(id=id)
+    serializer=MessageSerializerForCreation(message)
+    print(f"✅✅Serializer message view{serializer.data}")
+    
+    lst.append(serializer.data if serializer.data else {})
+
     # dct[id]=d
     try:
         # print("children:",message.parent_message.all())
