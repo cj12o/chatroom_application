@@ -1,21 +1,23 @@
-# from langchain_openai import ChatOpenAI
-# from langchain_core.prompts import ChatPromptTemplate
-# from pydantic import BaseModel,Field
-# from typing import List
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+from pydantic import BaseModel,Field
+from typing import List
 
-# class RoomFormat(BaseModel):
-#     room_name:str=Field(description="room_name")
-#     room_id:int=Field(description="room_id")
-#     reason:str=Field(description="reason why this room is recommended")
+class RoomFormat(BaseModel):
+    room_name:str=Field(description="room_name")
+    room_id:int=Field(description="room_id")
+    reason:str=Field(description="reason why this room is recommended")
 
-# class RespFormat(BaseModel):
-#     recommendation:List[RoomFormat]
+class RespFormat(BaseModel):
+    recommendation:List[RoomFormat]
 
-# llm=ChatOpenAI(
-#     base_url="http://127.0.0.1:1239/v1/",
-#     model="hermes-3-llama-3.2-3b",
-#     api_key="lm_studio",
-# )
+llm=ChatOpenAI(
+    base_url="http://127.0.0.1:1239/v1/",
+    model="hermes-3-llama-3.2-3b",
+    api_key="lm_studio",
+    streaming=True,
+)
+dewde
 
 # llm_structured_op=llm.with_structured_output(RespFormat)
 

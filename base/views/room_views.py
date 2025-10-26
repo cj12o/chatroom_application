@@ -92,6 +92,7 @@ def listRooms(request):
                 "message":"No matching keywords"
             },status=status.HTTP_400_BAD_REQUEST)
 
+        
         if serializer.data:
             # print(f"✅✅Serializers:{serializer}")
             return Response({

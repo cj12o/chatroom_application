@@ -2,7 +2,7 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
-
+import subprocess
 
 def main():
     """Run administrative tasks."""
@@ -17,6 +17,11 @@ def main():
         ) from exc
     execute_from_command_line(sys.argv)
 
+def updateReq():
+    subprocess.run(args="python -m pip freeze > requirements.txt",shell=True)
 
 if __name__ == '__main__':
     main()
+    updateReq()
+
+    

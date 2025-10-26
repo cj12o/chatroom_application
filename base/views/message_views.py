@@ -11,8 +11,6 @@ from ..serializers.message_serializer import MessageSerializerForCreation,Messag
 from ..models.message_model import Message,Vote
 from ..models.room_model import Room
 
-
-
 def helper(id:int,lst:list):
     # message=Message.objects.get(id=id)
     # votes=Vote.objects.filter(Q(message__id=message.id))
@@ -89,6 +87,8 @@ class MessageApiview(APIView):
         messages=Message.objects.filter(Q(parent=None))
         # dct={}
         lst=[]
+        if pk!=None:
+            messages=messages.filter(Q(room__id=pk))
         for m in messages:
             helper(m.id,lst)
         # lst=[v for k,v in dct.items()]
@@ -96,10 +96,10 @@ class MessageApiview(APIView):
         print(f"✅✅Final dcyt:{lst}")
 
 
-
         return Response({
             "messages":lst
         },status=status.HTTP_200_OK)
+        
    
     """pk is message id"""
     def delete(self,request,pk):
@@ -148,4 +148,5 @@ class MessageApiview(APIView):
     #         "error":serializer.errors,
     #         "message":"error in updating msg"
     #     },status=status.HTTP_400_BAD_REQUEST)       
+
 

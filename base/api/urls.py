@@ -5,7 +5,6 @@ from django.conf import settings
 from ..views import admin_views as av
 from ..views import room_views as rv
 from ..views import message_views as mv
-# from ..views import reaction_views as rcv
 from ..views import emoji_views as ev
 from ..views import profile_views as pv
 from ..views import topic_views as tv
@@ -16,6 +15,9 @@ from ..views.llm import tools
 
 from ..views import vote_views as vv
 
+
+
+
 urlpatterns=[
     path("user-details/",av.UserApiview.as_view()),
     path("admin-login/",av.LoginApiview.as_view()),
@@ -25,7 +27,7 @@ urlpatterns=[
     #ROOM VIEWS
     path("rooms/list/",rv.listRooms),
     #User recommendation
-    path("rooms/recommend/",rv.UserRecommendation.as_view()),
+    # path("rooms/recommend/",rv.UserRecommendation.as_view()),
     #recomm save
     # path("rooms/saveRecomm/",rev.saveRecommendation.as_view()),
 
@@ -52,7 +54,9 @@ urlpatterns=[
     path("is_online/<int:pk>/",rv.getOnlineusers),
     
     #vote path temp
-    path("votes/<int:pk>/",vv.voteApiview.as_view())
+    path("votes/<int:pk>/",vv.voteApiview.as_view()),
+
+    
 ]
 
 

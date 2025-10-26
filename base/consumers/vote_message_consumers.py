@@ -28,7 +28,7 @@ def vote_operation(vote_author:str,message_id:int,vote_type:str,room_id:int,stat
             if vote_type=="downvote":
                 vote_choice=-1
             vote=Vote.objects.create(user=user,message=msg,room=room,vote=vote_choice)
-            print("✅addded vote")
+            print("✅added vote")
             return True
     except Exception as e:
         print(f"❌❌Error in vote operation:{e}")
@@ -98,7 +98,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                 await self.close()
                 return
 
-            # print(f"user:{self.scope["username"]}")
+            # p(f"user:{self.scope["username"]}")
             self.room_id = self.scope["url_route"]["kwargs"]["q"]
             self.room_name = await get_room_name(int(self.room_id))
             self.room_group = f"room_{self.room_id}"
@@ -127,12 +127,12 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
     async def receive(self,text_data):
         try:
-            # print(f"Scope:{self.scope}")
+            # p(f"Scope:{self.scope}")
 
             print(f"📩 Received from {self.channel_name}")
             # if type(text_data)==dict:
             data=json.loads(text_data)
-            print(data)
+            # print(data)
 
 
             #task is vote operation
