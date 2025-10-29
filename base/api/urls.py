@@ -5,7 +5,6 @@ from django.conf import settings
 from ..views import admin_views as av
 from ..views import room_views as rv
 from ..views import message_views as mv
-from ..views import emoji_views as ev
 from ..views import profile_views as pv
 from ..views import topic_views as tv
 from ..views.userRecommendation import chroma as cv
@@ -15,7 +14,7 @@ from ..views.llm import tools
 
 from ..views import vote_views as vv
 
-
+from ..views.agent import agent_view as agv
 
 
 urlpatterns=[
@@ -56,7 +55,10 @@ urlpatterns=[
     #vote path temp
     path("votes/<int:pk>/",vv.voteApiview.as_view()),
 
-    
+
+    #testing agent 
+    path("triggeragent/",agv.AgentApiviews.as_view())
+  
 ]
 
 

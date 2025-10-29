@@ -75,7 +75,7 @@ vote_operation=database_sync_to_async(vote_operation)
 class ChatConsumer(AsyncJsonWebsocketConsumer):
 
     async def user_status_update(self,event):
-        """methos that on connect and disconnect send jsn msg to update status"""
+        """method that on connect and disconnect send jsn msg to update status"""
         await self.send_json(content=event)
 
 
@@ -93,7 +93,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         try:
             await self.accept()
             print(f"User:{self.scope["username"]}")
-
+            print(f"🗼🗼SCOPE:{self.scope}")
             if self.scope["username"]==None:
                 await self.close()
                 return

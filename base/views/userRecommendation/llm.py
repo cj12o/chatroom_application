@@ -17,7 +17,7 @@ llm=ChatOpenAI(
     api_key="lm_studio",
     streaming=True,
 )
-dewde
+
 
 # llm_structured_op=llm.with_structured_output(RespFormat)
 

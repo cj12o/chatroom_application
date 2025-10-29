@@ -1,3 +1,6 @@
+# import django
+# django.setup()
+
 from channels.middleware import BaseMiddleware
 from django.contrib.auth.models import User
 from channels.db import database_sync_to_async
@@ -27,7 +30,7 @@ class TokenAuthChannelMiddleware(BaseMiddleware):
     
     async def __call__(self,scope,receive,send):
         try:
-            print(scope)
+            # print(f"scope middleware :{scope}")
             token=scope["query_string"].decode()
             token=token[6:len(token)]
 
