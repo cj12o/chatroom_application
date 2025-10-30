@@ -93,7 +93,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         try:
             await self.accept()
             print(f"User:{self.scope["username"]}")
-            print(f"🗼🗼SCOPE:{self.scope}")
+            # print(f"🗼🗼SCOPE:{self.scope}")
             if self.scope["username"]==None:
                 await self.close()
                 return

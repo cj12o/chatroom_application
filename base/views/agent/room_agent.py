@@ -1,160 +1,187 @@
-from langchain_classic.agents import AgentExecutor,create_react_agent,Tool,create_tool_calling_agent
 from langchain_openai import ChatOpenAI
 from langchain.tools import tool
-from pydantic import BaseModel,Field
-from typing import Dict,List
-from langchain_core.output_parsers import PydanticOutputParser
-import json
-from langchain_core.prompts import PromptTemplate,ChatPromptTemplate
+from typing import TypedDict,Annotated,Literal
+from langchain.messages import AnyMessage,SystemMessage,ToolMessage,HumanMessage
+import operator
+from langgraph.graph import StateGraph, MessagesState, START, END
 
+import os
 
-from concurrent.futures.thread import ThreadPoolExecutor
-from concurrent.futures import as_completed
-import time
-import json
-from pydantic import BaseModel,Field
-from typing import List,Dict
-from ..message_views import MessageApiview
+from dotenv import load_dotenv
 
-from .testSocket import connectTows
-import asyncio
-
+load_dotenv()
 
 llm=ChatOpenAI(
-    # model="mistralai/mistral-nemo-instruct-2407",
-    # model="qwen/qwen3-4b-thinking-2507",
-    model="hermes-3-llama-3.2-3b",
-    base_url="http://127.0.0.1:1239/v1/",
-    api_key="dewfe",
+    base_url=os.getenv("LLM_BASE_URL"),
+    model=os.getenv("LLM"),
+    api_key=os.getenv("LLM_API_KEY")
 )
 
 
 
-class parser(BaseModel):
-    content:dict=Field(description="response of llm")
+class MessagesState(TypedDict):
+    messages:Annotated[list[AnyMessage],operator.add]
+    llm_calls:int
+
+class Context(TypedDict):
+    room_name:str
+    room_description:str
+    #chats
 
 
-class parser_tool2(BaseModel):
-    content:str=Field(description="response of llm")
+@tool(description="this tool generates interesting poll to increase chat room's activity")
+def pollGenerator():
     
-oup_parser=PydanticOutputParser(pydantic_object=parser)
-oup_parser2=PydanticOutputParser(pydantic_object=parser_tool2)
-
-
-
-
-# th_pl_exec=ThreadPoolExecutor(max_workers=3)
-
-@tool
-def pollGenerator(context: str) -> dict:
-    """This tool generates a poll for the room to increase engagement.
-    Returns: dictionary 
     """
-    from .agent_view import executor as executor_thread_pool
-    template=ChatPromptTemplate.from_messages([
-        ("system",
-        """
-        you are a poll generator 
-        based on context:{context} generate poll
+    This tool generates interesting poll to increase chat room's activity.
 
-        output in format:{format}
-        """)   
-    ])    
-
-    llm_struct=llm.with_structured_output(parser)
-    chain=template|llm_struct
-    result=chain.invoke({"context":context,"format":oup_parser.get_format_instructions()}).content
-    print(f"Result:{result}")
+    Args:
+        state: agent's state
+    """
+    print(f"---------------POLL GEN CALLED---------------------------")
+    SYSTEM_PROMPT=f""" 
+    You are an expert poll generator generate a poll based on given room details:
+    Chat Room Name:{"Python room"}
+    Chat Room Description:{"Discuss regarding highly interesting updates and features for python ecosystem."}
+    """
 
 
-    executor_thread_pool.submit(lambda : asyncio.run(connectTows()))
-    #trigger tkinter   
-    #######
+    llm_output=llm.invoke([SystemMessage(content=SYSTEM_PROMPT),HumanMessage(content="generate poll")])
+    print(f"\n=====poll_gen output:{llm_output}=======\n")
 
-    return result
+    return llm_output.content
 
 
-@tool
-def generateThread(context:str)->str:
-    """This tool generates a thread/comment and invite users for dicussions to increase engagement
+
+@tool(description="this tool generates interesting thread/comments to increase chat room's activity")
+def threadGenerator():
     
-    Returns: str 
     """
-    from .agent_view import executor as executor_thread_pool
-    template=ChatPromptTemplate.from_messages(
-        [
-            ("system",
-             """
-            based  on context:{context}
+    This tool generates interesting threads/comments  to increase chat room's activity.
 
-            generate an engaging thread and invite user thoughts    
+    Args:
+        state: agent's state
+    """
+    print(f"---------------THREADGEN GEN CALLED---------------------------")
+    SYSTEM_PROMPT=f""" 
+    You are an expert in the room's topic  generate an interesting thread/comment based on given room details:
+    Chat Room Name:{"Python room"}
+    Chat Room Description:{"Discuss regarding highly interesting updates and features for python ecosystem."}
+    """
 
-            output in format:{format}
-            """)
-        ]
+
+    llm_output=llm.invoke([SystemMessage(content=SYSTEM_PROMPT),HumanMessage(content="generate thread")])
+    print(f"\n=====poll_gen output:{llm_output}=======\n")
+    
+    return llm_output.content
+
+
+tools=[pollGenerator,threadGenerator]
+llm_with_tools=llm.bind_tools(tools)
+tool_toolname_mapper={tool.name:tool for tool in tools}
+
+
+def llm_node(state: dict) -> dict:
+    """
+    Node that decides whether to call tools or generate a direct response.
+    The LLM acts as an engagement agent for a chat room.
+    """
+
+    SYSTEM_PROMPT = """ 
+    You are an expert **Chat Room Engagement Agent**.
+    Your goal is to **increase engagement and activity** in this room
+    by making conversations more interesting, interactive, or fun.
+
+    ## Instructions:
+    - Always understand the current context from the conversation messages.
+    - If engagement can be improved with a poll, call the `pollGenerator` tool.
+    - Otherwise, reply naturally to keep the conversation flowing.
+
+    ## Available tool:
+    - pollGenerator(context: str) → Generates a poll for the room to increase engagement.
+    - threadGenerator(context: str) → Generates a thread for the room to increase engagement.
+
+    ## Guidelines:
+    - Do not repeat user messages.
+    - Be concise and engaging.
+    - Only call the tool if it makes the chat more interactive.
+    - If you call a tool, provide only the tool call — no extra commentary.
+
+    
+    """
+
+    llm_output = llm_with_tools.invoke(
+        [SystemMessage(content=SYSTEM_PROMPT)] + state["messages"]
     )
 
-    chain=template|llm.with_structured_output(parser_tool2)
-    result=chain.invoke({"context":context,"format":oup_parser2.get_format_instructions()}).content
+    return {
+        "messages": [llm_output],
+        "llm_calls": state.get("llm_calls", 0) + 1,
+    }
+
+
+
+def tool_node(state:dict):
     
-    print(f"Response from tool threadgen:{result}")
-    
+    """
+    tool gets called.
+    """
 
-    executor_thread_pool.submit(lambda :asyncio.run(connectTows()))
-    return result
-
-    
-
-def create_room_agent():
-    tools = [pollGenerator,generateThread]
-
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", "You are an expert assistant that makes chat rooms more interactive and viral."),
-        ("human", 
-        """Room Name: {room_name}
-        Room Description: {room_desc}
-        Recent Chats: {chats}
-
-
-        task to complete:{input}
-        Reasoning:{agent_scratchpad}
-         
-        based on provided tools call the correct one to complete task:
-        pass context given as it is  to tools
-        {tool_names}
+    print(f"Tool node called")
+    outputs=[]
+    for message in state["messages"][-1].tool_calls:
+        tool_name=message["name"]
+        print(f"TOOL CALLED:{tool_name}")
+        llm_output=tool_toolname_mapper[tool_name].invoke(None)
+        outputs.append(ToolMessage(content=llm_output,tool_call_id=message["id"]))
+        break
         
-        """)
-    ])
 
-    # ✅ Correct agent constructor
-    agent = create_tool_calling_agent(llm, tools, prompt)
+    return {
+        "messages":outputs,
+        "llm_calls":state.get("llm_calls",0)+1
+    }
 
-    # ✅ Executor to run agent
-    executor = AgentExecutor(agent=agent, tools=tools,max_iterations=1,verbose=True,early_stopping_method= 'force')
-    return executor
+
+
+def re_run(state: dict) -> Literal["tool_node", END]:
+    """
+    Decides whether to call a tool next or end the execution.
+    """
+    last_msg = state["messages"][-1]
+    if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
+        return "tool_node"
+    return END
 
 
 def main():
     
-    print(f"✅✅Agent called")
-    agent_executor = create_room_agent()
+
+    graph=StateGraph(MessagesState)
+
+    graph.add_node(llm_node)
+    graph.add_node(tool_node)
+
+    graph.add_edge(START,"llm_node")
+    graph.add_conditional_edges("llm_node",re_run,[END,"tool_node"])
+    graph.add_edge("tool_node",END)
+
+    agent=graph.compile()
+
+
+    result=agent.invoke({"messages":[HumanMessage("make chat room interactive")],"llm_calls":0},{"recursion_limit": 10})
+
+
+    # for m in result["messages"]:
+    #     print(m)
+
+    # result["llm_calls"]
+    idx=0
+    sol=""
+    for m in result["messages"]:
+        if hasattr(m,"content") and len(m.content)>1 and idx==len(result["messages"])-1:
+            sol=m.content    
+        idx=idx+1
     
-    room_data = {
-        "room_name": "Python Developers Hub",
-        "room_desc": "A community for Python enthusiasts to share code and learn",
-        "chats": "User1: Anyone know good Python resources?\nUser2: I'm working on a Django project",
-        "input": "Increase engagement in the room",
-        "tool_names":["pollGenerator","generateThread"]
-    }
-
-    result = agent_executor.invoke(room_data)
-    print("\n✅ AGENT RESULT:", result)
-
-
-if __name__ == "__main__":
-
-    time_start=time.time()
-    main()
-    print(f"TIME TAKEN:{time.time()-time_start}")
-
+    return sol
 
