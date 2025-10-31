@@ -19,7 +19,7 @@ def main():
 
 def updateReq():
     subprocess.run(args="python -m pip freeze > requirements.txt",shell=True)
-
+    
 if __name__ == '__main__':
     main()
     updateReq()

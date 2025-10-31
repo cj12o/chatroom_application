@@ -14,7 +14,6 @@ from ..admin_views import  LoginApiview
 
 from .testSocket import connectTows
 
-import queue
 
 executor=ThreadPoolExecutor(max_workers=12)
 

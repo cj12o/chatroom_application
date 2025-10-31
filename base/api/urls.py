@@ -9,8 +9,6 @@ from ..views import profile_views as pv
 from ..views import topic_views as tv
 from ..views.userRecommendation import chroma as cv
 from ..views import history_views as hv
-# from ..views import recommendation_views as rev
-from ..views.llm import tools 
 
 from ..views import vote_views as vv
 
