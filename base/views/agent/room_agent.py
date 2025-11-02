@@ -4,6 +4,7 @@ from typing import TypedDict,Annotated,Literal
 from langchain.messages import AnyMessage,SystemMessage,ToolMessage,HumanMessage
 import operator
 from langgraph.graph import StateGraph, MessagesState, START, END
+import json
 
 import os
 
@@ -43,10 +44,17 @@ def pollGenerator():
     You are an expert poll generator generate a poll based on given room details:
     Chat Room Name:{"Python room"}
     Chat Room Description:{"Discuss regarding highly interesting updates and features for python ecosystem."}
+    
+    Output must be in this JSON format only:
+    {{
+        "question":"poll title ",
+        "options":[choice 1,choice 2]
+    }}
+
     """
 
 
-    llm_output=llm.invoke([SystemMessage(content=SYSTEM_PROMPT),HumanMessage(content="generate poll")])
+    llm_output=llm.invoke([SystemMessage(content=SYSTEM_PROMPT)])
     print(f"\n=====poll_gen output:{llm_output}=======\n")
 
     return llm_output.content
@@ -94,8 +102,8 @@ def llm_node(state: dict) -> dict:
 
     ## Instructions:
     - Always understand the current context from the conversation messages.
-    - If engagement can be improved with a poll, call the `pollGenerator` tool.
-    - Otherwise, reply naturally to keep the conversation flowing.
+    - always call the `pollGenerator` tool.
+ 
 
     ## Available tool:
     - pollGenerator(context: str) → Generates a poll for the room to increase engagement.
@@ -177,11 +185,23 @@ def main():
 
     # result["llm_calls"]
     idx=0
-    sol=""
+    sol={}
     for m in result["messages"]:
-        if hasattr(m,"content") and len(m.content)>1 and idx==len(result["messages"])-1:
-            sol=m.content    
+        if hasattr(m,"content") and len(m.content)>1 and idx==len(result["messages"])-1:    
+
+            # sol["message"]=m.content
+            sol["message"]=json.loads(m.content)
+            
+
+        if hasattr(m,"tool_calls"):
+            print(f"tool called:{m.tool_calls}")
+
+            sol["tool_called"]=m.tool_calls[0]["name"]
+        
+
         idx=idx+1
-    
+    #roomid 
+    sol["room_id"]=1    
+    print(f"🐐🐐SOL FROM AGENT:{sol}")
     return sol
 

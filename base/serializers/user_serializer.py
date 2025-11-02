@@ -54,6 +54,7 @@ class UserSerializer(serializers.Serializer):
 class AdminLoginSerializer(serializers.Serializer):
     email=serializers.EmailField()
     password=serializers.CharField()
+   
 
     def validate(self,validated_data):
         # print(f"Validated data=>{validated_data}")
@@ -69,6 +70,7 @@ class AdminLoginSerializer(serializers.Serializer):
         if not user.check_password(password):
             raise serializers.ValidationError("Invalid password")
 
+        
         return validated_data
     
 

@@ -5,6 +5,7 @@ from django.contrib.auth.models import User
 from base.models.userprofile_model import UserProfile
 from base.models.room_model import Room
 from base.models.message_model import Message,Vote
+from base.models.poll_model import Poll,PollVote
 from channels.db import database_sync_to_async
 import json 
 # example scope=>
@@ -48,7 +49,9 @@ def get_room_name(room_id:int):
     return room.name
 
 
-def saveToDb(room_id:int,username:str,message:str,reactions:list=[],parent:int=None):
+
+
+def saveToDb(room_id:int,username:str,message:str,parent:int=None):
     """message to db"""
     room=Room.objects.get(id=room_id)
     author=User.objects.get(username=username)
@@ -62,7 +65,27 @@ def saveToDb(room_id:int,username:str,message:str,reactions:list=[],parent:int=N
     return msg.id
 
 
-    
+def savePolltoDb(room_id:int,username:str,message:str,parent:int=None):
+    try:
+        room=Room.objects.get(id=room_id)
+        author=User.objects.get(username=username)
+        
+        msg=Message.objects.create(room=room,author=author,message="")
+        if parent!=None:
+            parent_msg=Message.objects.get(id=parent)
+            msg.parent=parent_msg
+
+        msg.save()
+
+        poll_det=json.loads(message)
+        new_poll=Poll.objects.create(message=msg)
+        new_poll.question=poll_det["question"]
+        new_poll.choices=poll_det={"choices":poll_det["choices"]}
+        new_poll.save()
+        return msg.id
+    except Exception as e:
+        print(f"❌❌🪨🪨POLL NOT SAVED,error:{str(e)}")
+
 
 
 maintain_user_visibility=database_sync_to_async(maintain_user_visibility)
@@ -174,6 +197,33 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                     )
 
                 #add to db
+            elif "task" in data and data["task"]=="AgentActivity":
+                if data["tool_called"]=="pollGenerator":
+                    room_id=int(self.scope["url_route"]["kwargs"]["q"])
+                    username=self.scope["username"]
+            
+                    message_id=await savePolltoDb(room_id=room_id,username=username,message=data["message"],parent=data["parent"])
+                else:
+                    room_id=int(self.scope["url_route"]["kwargs"]["q"])
+                    username=self.scope["username"]
+                    ###no reactions,no parents
+                    message_id=await saveToDb(room_id=room_id,username=username,message=data["message"],parent=data["parent"])
+                    
+                await self.channel_layer.group_send(
+                    self.room_group,
+                    {
+                        "type":"chat_message",
+                        "tool_called":data["tool_called"],
+                        "task":data["task"],
+                        "message": data["message"],  
+                        "parent":data["parent"],
+                        "username":self.scope["username"],
+                        "message_id":message_id
+                        # "status": True
+                    }
+                )
+
+
             else:
             # broadcast to  group:
                 #Add to db

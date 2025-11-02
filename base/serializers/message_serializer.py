@@ -14,6 +14,7 @@ class MessageSerializerForCreation(serializers.Serializer):
     upvotes=serializers.SerializerMethodField()
     downvotes=serializers.SerializerMethodField()
     children=serializers.SerializerMethodField()
+    hasPoll=serializers.SerializerMethodField()
 
     # class Meta:
     #     model=Message
@@ -71,6 +72,10 @@ class MessageSerializerForCreation(serializers.Serializer):
             return self.context["downvotes"]
         except Exception as e:
             return 0
+    
+    def get_hasPoll(self,obj):
+        if obj.poll_set.exists(): return True
+        return False
     
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:

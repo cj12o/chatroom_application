@@ -33,7 +33,7 @@ def helper():
         parsed_date=datetime.strptime(lst[0],"%Y-%m-%d %H:%M:%S")
         hour_diff=datetime.now().hour-parsed_date.hour
         print(f"HOUR DIFF=>{hour_diff}")
-        if hour_diff>0:
+        if hour_diff>0 or hour_diff<=0:
 
             login_obj=LoginApiview()
             dct_info={

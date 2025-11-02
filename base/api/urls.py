@@ -14,6 +14,7 @@ from ..views import vote_views as vv
 
 from ..views.agent import agent_view as agv
 
+from ..views import poll_views as pollv
 
 urlpatterns=[
     path("user-details/",av.UserApiview.as_view()),
@@ -55,8 +56,12 @@ urlpatterns=[
 
 
     #testing agent 
-    path("triggeragent/",agv.AgentApiviews.as_view())
-  
+    path("triggeragent/",agv.AgentApiviews.as_view()),
+
+    #tets votes
+    path("pollvotes/<int:pk>/",pollv.Voteview.as_view()),
+    #test polls in room
+    path("polls/<int:pk>/",pollv.Pollview.as_view())
 ]
 
 

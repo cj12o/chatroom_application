@@ -28,6 +28,7 @@ class LoginApiview(APIView):
             "userdata":serializer.data,
             "name":str(user.username),
             "token":token.key,
+            "profile_pic":"http://127.0.0.1:8000"+UserProfile.objects.get(user=user).profile_pic.url,
             "message":"Admin logged in "
             },status=status.HTTP_200_OK)
         else:
