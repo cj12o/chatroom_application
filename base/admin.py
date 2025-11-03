@@ -6,6 +6,7 @@ from .models.topic_model import Topic
 from .models.user_history_model import History
 from .models.recommendation_model import Recommend
 from .models.poll_model import Poll,PollVote
+from .models.file_log_model import ChatFileLog,MessageSummerizedStatus
 
 # Register your models here.
 admin.site.register(UserProfile)
@@ -17,3 +18,5 @@ admin.site.register(Recommend)
 admin.site.register(Vote)
 admin.site.register(PollVote)
 admin.site.register(Poll)
+admin.site.register(ChatFileLog)
+admin.site.register(MessageSummerizedStatus)

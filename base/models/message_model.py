@@ -1,6 +1,9 @@
 from django.db import models
 from .room_model import Room
 from django.contrib.auth.models import User 
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
 
 class Message(models.Model):
     room = models.ForeignKey(to=Room,on_delete=models.CASCADE,related_name="room_message")
@@ -11,6 +14,9 @@ class Message(models.Model):
     parent=models.ForeignKey(to="self",on_delete=models.CASCADE,null=True,related_name="parent_message")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+
+
 
 
 class Vote(models.Model):
