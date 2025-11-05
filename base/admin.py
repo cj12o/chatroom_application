@@ -7,8 +7,9 @@ from .models.user_history_model import History
 from .models.recommendation_model import Recommend
 from .models.poll_model import Poll,PollVote
 from .models.file_log_model import ChatFileLog,MessageSummerizedStatus
-
+from .models.notification_model import Notification
 # Register your models here.
+
 admin.site.register(UserProfile)
 admin.site.register(Room)
 admin.site.register(Message)
@@ -20,3 +21,4 @@ admin.site.register(PollVote)
 admin.site.register(Poll)
 admin.site.register(ChatFileLog)
 admin.site.register(MessageSummerizedStatus)
+admin.site.register(Notification)

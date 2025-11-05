@@ -17,5 +17,7 @@ class Room(models.Model):
     members=models.ManyToManyField(to=User,related_name="room_member")
     created_at=models.DateTimeField(auto_now_add=True)
     updated_at=models.DateTimeField(auto_now=True)
+    tags=models.JSONField(default=dict)
 
     moderator=models.ManyToManyField(to=User,related_name="room_moderator")
+    

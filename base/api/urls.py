@@ -15,7 +15,7 @@ from ..views import vote_views as vv
 from ..views.agent import agent_view as agv
 
 from ..views import poll_views as pollv
-
+from ..views import notification_views as nv
 urlpatterns=[
     path("user-details/",av.UserApiview.as_view()),
     path("admin-login/",av.LoginApiview.as_view()),
@@ -61,7 +61,8 @@ urlpatterns=[
     #tets votes
     path("pollvotes/<int:pk>/",pollv.Voteview.as_view()),
     #test polls in room
-    path("polls/<int:pk>/",pollv.Pollview.as_view())
+    path("polls/<int:pk>/",pollv.Pollview.as_view()),
+    path("notify/",nv.NotificationView.as_view())
 ]
 
 

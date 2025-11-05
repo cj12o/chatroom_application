@@ -2,6 +2,8 @@ import os
 from celery import Celery
 from django.db.models  import signals,Q
 from django.dispatch import receiver
+from django.db  import transaction
+
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 
@@ -78,6 +80,28 @@ def add_summerize_task(json_msg:dict):
     except Exception as e:
         print(f"Error in add_summerize_task:{str(e)}")
 
-        
 
 
+# @shared_task
+# def moderate(json_chats:dict):
+    
+    
+#     for k,v in json_chats.items():
+
+@shared_task
+def createNotification(json:dict):
+    from base.models.notification_model import Notification
+    from base.models.room_model import Room
+    from base.models.message_model import Message
+    try:
+        with transaction.atomic():
+            room=Room.objects.get(id=json["room_id"])
+            message=Message.objects.get(id=json["message_id"])
+            notification=Notification.objects.create(room=room,message=message)
+            notification.notify=json["notify"]
+            notification.save()
+
+    #integerity error ,due to race condition
+    except Exception as e:
+        print(f"❌❌ERROR In saving notifocation:{str(e)}")
+        pass
