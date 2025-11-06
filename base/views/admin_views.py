@@ -24,12 +24,16 @@ class LoginApiview(APIView):
             user=User.objects.get(Q(email=data["email"]))
             token,created=Token.objects.get_or_create(user=user) 
             
+            profile_pic=None
+            if user.profile.profile_pic:
+                profile_pic="http://127.0.0.1:8000"+user.profile.profile_pic.url
+            
             return Response({
             "userdata":serializer.data,
             "name":str(user.username),
             "token":token.key,
-            "profile_pic":"http://127.0.0.1:8000"+UserProfile.objects.get(user=user).profile_pic.url,
-            "message":"Admin logged in "
+            "profile_pic":profile_pic,
+            "message":"User logged in "
             },status=status.HTTP_200_OK)
         else:
             return Response({

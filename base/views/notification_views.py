@@ -7,6 +7,7 @@ from rest_framework import status
 from django.db.models import Q
 from rest_framework.decorators import api_view
 
+from ..serializers.notification_serializer import NotificationSerializer
 
 class NotificationView(APIView):
     permission_classes = [IsAuthenticated]
@@ -16,11 +17,17 @@ class NotificationView(APIView):
             user = request.user
             member_in_rooms=user.room_member.all()
 
+            lst=[]
             for rm in member_in_rooms:
-                print(f"Room memeber:{rm.name}")
-                print(f"{len(rm.notification_set.all())}")
+                
+                # print(f"{len(rm.notification_set.all())}")
+                serializer=NotificationSerializer(rm.notification_set.all(),many=True)
+                
+                if serializer:
+                    lst.append(serializer.data)
+                    
             return Response({
-                "status":"OK"
+                "notifications":lst
             },status=status.HTTP_200_OK)
         
         except Exception as e:

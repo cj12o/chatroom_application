@@ -16,6 +16,13 @@ from ..views.agent import agent_view as agv
 
 from ..views import poll_views as pollv
 from ..views import notification_views as nv
+# from ..views import recommendation_views as rev
+
+
+
+
+
+# from ..views import test as t
 urlpatterns=[
     path("user-details/",av.UserApiview.as_view()),
     path("admin-login/",av.LoginApiview.as_view()),
@@ -62,7 +69,9 @@ urlpatterns=[
     path("pollvotes/<int:pk>/",pollv.Voteview.as_view()),
     #test polls in room
     path("polls/<int:pk>/",pollv.Pollview.as_view()),
-    path("notify/",nv.NotificationView.as_view())
+    path("notify/",nv.NotificationView.as_view()),
+
+    # path("notification_tester/",t.TestView.as_view())
 ]
 
 

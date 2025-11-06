@@ -3,7 +3,7 @@ from celery import Celery
 from django.db.models  import signals,Q
 from django.dispatch import receiver
 from django.db  import transaction
-
+from channels.layers import get_channel_layer
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 
@@ -21,7 +21,7 @@ from langchain_openai import ChatOpenAI
 import os
 from dotenv import load_dotenv
 from langchain.messages import AnyMessage,SystemMessage,ToolMessage,HumanMessage
-
+import asyncio
 
 load_dotenv()
 
@@ -88,7 +88,8 @@ def add_summerize_task(json_msg:dict):
     
 #     for k,v in json_chats.items():
 
-@shared_task
+
+@shared_task(autoretry_for=(), max_retries=0)
 def createNotification(json:dict):
     from base.models.notification_model import Notification
     from base.models.room_model import Room
@@ -100,8 +101,9 @@ def createNotification(json:dict):
             notification=Notification.objects.create(room=room,message=message)
             notification.notify=json["notify"]
             notification.save()
-
+        
     #integerity error ,due to race condition
     except Exception as e:
         print(f"❌❌ERROR In saving notifocation:{str(e)}")
         pass
+        

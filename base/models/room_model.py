@@ -4,7 +4,7 @@ from .topic_model import Topic
 
 class Room(models.Model):
     # rel with user
-    author=models.ForeignKey(User,on_delete=models.CASCADE)
+    author=models.ForeignKey(User,on_delete=models.CASCADE,related_name="author_rooms")
     name=models.CharField(max_length=100,unique=True)
     description=models.TextField()
 
