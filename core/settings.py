@@ -33,6 +33,7 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     'daphne',
     'corsheaders',
+    'django_celery_beat',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -42,6 +43,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'base.apps.BaseConfig',
+    'base.tasks',
+    'django_celery_results',
 ]
 
 MIDDLEWARE = [
@@ -155,5 +158,5 @@ CELERY_TIMEZONE = "Asia/Kolkata"
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
 
-
-CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+# "redis://localhost:6379/0"
+CELERY_RESULT_BACKEND = "django-db"

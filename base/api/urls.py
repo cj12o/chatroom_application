@@ -12,7 +12,7 @@ from ..views import history_views as hv
 
 from ..views import vote_views as vv
 
-from ..views.agent import agent_view as agv
+# from ..views.agent import agent_view as agv
 
 from ..views import poll_views as pollv
 from ..views import notification_views as nv
@@ -63,7 +63,7 @@ urlpatterns=[
 
 
     #testing agent 
-    path("triggeragent/",agv.AgentApiviews.as_view()),
+    # path("triggeragent/",agv.AgentApiviews.as_view()),
 
     #tets votes
     path("pollvotes/<int:pk>/",pollv.Voteview.as_view()),

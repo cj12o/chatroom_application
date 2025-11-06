@@ -19,9 +19,13 @@ def main():
 
 def updateReq():
     subprocess.run(args="python -m pip freeze > requirements.txt",shell=True)
-    
+
+def setup_periodic_task():
+    subprocess.run(args="python manage.py setup_periodic_task",shell=True)
+
 if __name__ == '__main__':
     main()
+    setup_periodic_task()
     # updateReq()
 
     

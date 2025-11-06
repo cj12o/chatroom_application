@@ -13,7 +13,7 @@ msg_id_q=Queue() #queue containe message id
 """
 k denotes batch size
 """
-k=10
+k=1
 
 import os
 from django.conf import settings

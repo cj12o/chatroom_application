@@ -1,9 +1,15 @@
 import os
 from celery import Celery
-from django.db.models  import signals,Q
-from django.dispatch import receiver
 from django.db  import transaction
-from channels.layers import get_channel_layer
+
+
+from celery import shared_task
+from langchain_openai import ChatOpenAI
+import os
+from dotenv import load_dotenv
+from langchain.messages import AnyMessage,SystemMessage
+
+
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings')
 
@@ -14,14 +20,17 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 
 
+# from base.tasks import main,savePolltoDb,start_agent
 
-from celery import shared_task
-import schedule
-from langchain_openai import ChatOpenAI
-import os
+# app.conf.beat_schedule = {
+#     'run-helper-every-2-seconds': {
+#         'task': 'base.tasks.agent_task.start_agent',
+#         'schedule': 2.0,   # runs every 2 seconds
+#     },
+# }
+
+
 from dotenv import load_dotenv
-from langchain.messages import AnyMessage,SystemMessage,ToolMessage,HumanMessage
-import asyncio
 
 load_dotenv()
 

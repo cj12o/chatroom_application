@@ -52,11 +52,6 @@ savePolltoDb=sync_to_async(savePolltoDb)
 async def connectTows(agent_msg:dict):
 
     print(f"🥅🥅called Connect to ws")
-    token=await getToken()
-    print(f"🗼🗼LLM TOKEN{token}")
-    uri=os.getenv("WEBSOCKET_URI")+str(token)
-    
-    print(f"🗼🗼URI:{uri}")
 
     newReply = {
         "message": agent_msg["message"],
