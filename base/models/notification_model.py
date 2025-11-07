@@ -2,57 +2,21 @@ from django.db import models,transaction
 from django.dispatch import receiver
 from .message_model import Message
 from .room_model import Room
-from core.celery import sendNotificationToWs
+from core.celery import createNotification
 from channels.layers import get_channel_layer
 from concurrent.futures import ThreadPoolExecutor
 from django.contrib.auth.models import User
 from django.db.models import Q,signals
 import asyncio
 
-
-
-# def getisRoomMemeber(username:str,room_name:str)->bool:
-#     """return true if admin or mod or member"""
-    
-#     user=User.objects.get(username=username)
-    
-#     member=user.room_member.filter(Q(name=room_name))
-#     if len(member)>0:
-#         return True
-#     room=user.author_rooms.filter(Q(name=room_name))
-#     if len(room)>0:
-#         return True
-    
-#     mod=user.room_moderator.filter(Q(name=room_name))
-#     if len(mod)>0:
-#         return True
-
-#     return False
-
-
-# async def sendNotificationToWs(notify_msg:str,id:int,permission:bool):
-#     try:
-#         if not permission: return
-#         """
-#         Sends msg to websocket
-#         """ 
-#         channel_layer=get_channel_layer()
-#         await channel_layer.group_send(
-#             "Notification_channel",
-#             {
-#                 "type":"sendNotification",
-#                 "task":"notification",
-#                 "notify":notify_msg,
-#                 "notification_id":id
-#             }
-#         )
-#     except Exception as e:
-#         print(f"❌❌Error in  sending msg to w{str(e)}")
+"""FLOW OF NOTIFICATION
+signal postsave Message-->celery Tak(createNotification)->asyncio (send to ws) -->update sent_status 
+"""
 
 
 class Notification(models.Model):
     room=models.ForeignKey(to=Room,on_delete=models.CASCADE)
-    message=models.OneToOneField(to=Message,on_delete=models.CASCADE)
+    message=models.ForeignKey(to=Message,on_delete=models.CASCADE)
     notify=models.CharField()
     created_at=models.DateTimeField(auto_now_add=True)
     sent_status=models.BooleanField(default=False)
@@ -65,22 +29,63 @@ class Notification(models.Model):
 #TODO:delete send notification
 #TODO:add recomm is ready
 
+
+async def sendNotificationToWs(notify_msg:str,notification_id:int,room_id:int):
+    try:
+        """
+        Sends msg to websocket
+        """ 
+        channel_layer=get_channel_layer()
+        await channel_layer.group_send(
+            "Notification_channel",
+            {
+                "type":"sendNotification",
+                "task":"notification",
+                "notify":notify_msg,
+                "notification_id":notification_id,
+                "room_id":room_id
+            }
+        )
+        print(f"❌❌NOTIF SEND TO WS")
+    except Exception as e:
+        print(f"❌❌Error in  sending msg to w{str(e)}")
+
+
+
+# @receiver(sender=Message,signal=signals.post_save)
+# def task_create_notification(sender,instance,created,**kwargs):
+    
+#     try:
+#         if not created: return #if msg not created
+#         print(f"✌️✌️SIGNAL RECIEVED ")
+#         msg=f"""
+#             Activity in Room : {instance.room.name}
+#             {instance.author.username}: Posted {instance.message}
+#         """
+#         room=Room.objects.get(id=instance.room.id)
+#         notf,_=Notification.objects.get_or_create(room=room,message=instance,notify=msg)
+#         if not notf.sent_status:
+#             asyncio.run(sendNotificationToWs(notification_id=notf.id,notify_msg=notf.notify,room_id=notf.room.id))
+#             Notification.objects.filter(Q(id=notf.id))
+#             print(f"✌️✌️SIGNAL RECIEVED  message saved {msg}")
+
+#     except Exception as e:
+#         print(f"ERROR  IN saving notification :{str(e)}")
+
+
+
 @receiver(sender=Message,signal=signals.post_save)
 def task_create_notification(sender,instance,created,**kwargs):
+    if not created:return
     msg=f"""
         Activity in Room : {instance.room.name}
-        {instance.author.username}: Posted {instance.message}
-    """
-
-
-    notf=Notification.objects.create(room=instance.room,message=instance,notify=msg)
-    notf.save()
-
-    # future=executor.submit(getisRoomMemeber,instance.author.username,instance.room.name)
+            {instance.author.username}: Posted {instance.message}
+        """
     
-    # future.add_done_callback(lambda f:asyncio.run(sendNotificationToWs(msg,instance.id,future.result())))
-    # createNotification.delay(dct)
-    
-@receiver(signal=signals.post_save,sender=Notification)
-def sendNotifications(sender,instance,created,**kwargs):
-    sendNotificationToWs.delay(instance.notify)
+    dct={
+        "room_id":instance.room.id,
+        "message_id":instance.id,
+        "notify":msg
+    }
+
+    createNotification.delay(dct)

@@ -99,39 +99,57 @@ def add_summerize_task(json_msg:dict):
     
 #     for k,v in json_chats.items():
 
-@shared_task
-def sendNotificationToWs(notify_msg:str):
+async def sendNotificationToWs(json:dict):
     channel_layer=layers.get_channel_layer()
-    #add verification
-    async_to_sync(channel_layer.group_send)(
+
+    notify_msg=json["notify"]
+    notification_id=json["id"]
+    room_id=json["room_id"]
+    
+    await channel_layer.group_send(
         "Notification_channel",
         {
             "type":"sendNotification",
             "task":"notification",
             "notify":notify_msg,
-            "notification_id":id
+            "notification_id":notification_id,
+            "room_id":room_id
         }
     )
 
 
 
-# @shared_task(autoretry_for=(), max_retries=0)
-# def createNotification(json:dict):
-#     from base.models.notification_model import Notification
-#     from base.models.room_model import Room
-#     from base.models.message_model import Message
-#     try:
-#         with transaction.atomic():
-#             room=Room.objects.get(id=json["room_id"])
-#             message=Message.objects.get(id=json["message_id"])
-#             notification=Notification.objects.create(room=room,message=message)
-#             notification.notify=json["notify"]
-#             notification.save()
+# @shared_task
+# def sendNotificationToWs(json:dict):
+    
+#     #TODO:add verification
 
-#         asyncio.run(sendNotificationToWs(notify_msg=notification.notify))
+#     asyncio.run(helper(json))
+
+
+@shared_task(autoretry_for=(), max_retries=0)
+def createNotification(json:dict):
+    from base.models.notification_model import Notification
+    from base.models.room_model import Room
+    from base.models.message_model import Message
+    try:
+        with transaction.atomic():
+            room=Room.objects.get(id=json["room_id"])
+            message=Message.objects.get(id=json["message_id"])
+            notification=Notification.objects.create(room=room,message=message,notify=json["notify"])
+
+        json2={
+            "notify":json["notify"],
+            "id":notification.id,
+            "room_id":notification.room.id
+        }
+        if not notification.sent_status:
+            asyncio.run(sendNotificationToWs(json2))
+            Notification.objects.get(id=json2["id"]).update(sent_status=True)
         
-#     #integerity error ,due to race condition
-#     except Exception as e:
-#         print(f"❌❌ERROR In saving notifocation:{str(e)}")
-#         pass
+
+    #integerity error ,due to race condition
+    except Exception as e:
+        print(f"❌❌ERROR In saving notifocation:{str(e)}")
+        pass
         
