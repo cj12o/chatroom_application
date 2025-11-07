@@ -8,8 +8,11 @@ from langchain.messages import AnyMessage,SystemMessage,ToolMessage,HumanMessage
 import operator
 from langgraph.graph import StateGraph, MessagesState, START, END
 import json
+from datetime import datetime,date
+import asyncio
 
 import os
+from channels.layers import get_channel_layer
 
 from dotenv import load_dotenv
 
@@ -34,6 +37,7 @@ class Context(TypedDict):
     room_description:str
     #chats
 
+context:Context={}
 
 @tool(description="this tool generates interesting poll to increase chat room's activity")
 def pollGenerator():
@@ -47,8 +51,8 @@ def pollGenerator():
     print(f"---------------POLL GEN CALLED---------------------------")
     SYSTEM_PROMPT=f""" 
     You are an expert poll generator generate a poll based on given room details:
-    Chat Room Name:{"Python room"}
-    Chat Room Description:{"Discuss regarding highly interesting updates and features for python ecosystem."}
+    Chat Room Name:{context["room_name"]}
+    Chat Room Description:{context["room_description"]}
     
     Output must be in this JSON format only:
     {{
@@ -60,7 +64,7 @@ def pollGenerator():
 
 
     llm_output=llm.invoke([SystemMessage(content=SYSTEM_PROMPT)])
-    print(f"\n=====poll_gen output:{llm_output}=======\n")
+    # print(f"\n=====poll_gen output:{llm_output}=======\n")
 
     return llm_output.content
 
@@ -77,14 +81,18 @@ def threadGenerator():
     """
     print(f"---------------THREADGEN GEN CALLED---------------------------")
     SYSTEM_PROMPT=f""" 
-    You are an expert in the room's topic  generate an interesting thread/comment based on given room details:
-    Chat Room Name:{"Python room"}
-    Chat Room Description:{"Discuss regarding highly interesting updates and features for python ecosystem."}
+    You are an expert in the room's topic  ,generate an interesting thread/comment based on given room details:
+        Chat Room Name:{context["room_name"]}
+        Chat Room Description:{context["room_description"]}
+        
+    Instructions:
+    - Thread should be small and interesting (50-100) words maximum 
+    - if you can give any url of website or article related to thread , it not mandatory but good to have 
     """
 
 
     llm_output=llm.invoke([SystemMessage(content=SYSTEM_PROMPT),HumanMessage(content="generate thread")])
-    print(f"\n=====poll_gen output:{llm_output}=======\n")
+    # print(f"\n=====poll_gen output:{llm_output}=======\n")
     
     return llm_output.content
 
@@ -107,7 +115,8 @@ def llm_node(state: dict) -> dict:
 
     ## Instructions:
     - Always understand the current context from the conversation messages.
-    - always call the `pollGenerator` tool.
+    - If interactivity can be increase by generating a  polll , call  the `pollGenerator` tool.
+    - else call `threadGenerator` tool.
  
 
     ## Available tool:
@@ -117,9 +126,9 @@ def llm_node(state: dict) -> dict:
     ## Guidelines:
     - Do not repeat user messages.
     - Be concise and engaging.
-    - Only call the tool if it makes the chat more interactive.
+    - Always call the tool ,which makes the chat more interactive.
     - If you call a tool, provide only the tool call — no extra commentary.
-
+    - calling a tool is manadatory
     
     """
 
@@ -167,7 +176,7 @@ def re_run(state: dict) -> Literal["tool_node", END]:
     return END
 
 @shared_task
-def main():
+def main(room_id:int,room_name:str,room_description:str)->dict:
     
 
     graph=StateGraph(MessagesState)
@@ -180,33 +189,37 @@ def main():
     graph.add_edge("tool_node",END)
 
     agent=graph.compile()
+    context["room_description"]=room_description
+    context["room_name"]=room_name
+    # result=agent.invoke({"messages":[HumanMessage("make chat room interactive")],"llm_calls":0},{"recursion_limit": 10,"max_iteration":1})
+    result=agent.invoke({"messages":[HumanMessage("make chat room interactive")],"llm_calls":0},recursion_limit=10,max_iteration=1)
 
 
-    result=agent.invoke({"messages":[HumanMessage("make chat room interactive")],"llm_calls":0},{"recursion_limit": 10})
-
-
-    # for m in result["messages"]:
-    #     print(m)
-
-    # result["llm_calls"]
     idx=0
     sol={}
-    for m in result["messages"]:
-        if hasattr(m,"content") and len(m.content)>1 and idx==len(result["messages"])-1:    
-
-            # sol["message"]=m.content
-            sol["message"]=json.loads(m.content)
-            
-
-        if hasattr(m,"tool_calls"):
-            print(f"tool called:{m.tool_calls}")
-
-            sol["tool_called"]=m.tool_calls[0]["name"]
+    poll_gen_called_flag=False
+    for x in result["messages"]:
+        if hasattr(x,"content"):
+            if len(x.content)>0 and hasattr(x,"tool_call_id"):
+                # print("="*60)
+                # print(x.content)
+                # print("="*60)
+                if poll_gen_called_flag:
+                    sol["content"]=json.loads(x.content)
+                    
+                else: sol["content"]=x.content
+                
+                
+            if hasattr(x,"tool_calls"):
+                tool_called=x.tool_calls[0]["name"]
+                if tool_called=="pollGenerator":
+                    poll_gen_called_flag=True
+                # print(f"TOOL CALLED {x.tool_calls[0]["name"]}")
+                sol["tool_called"]=tool_called
         
-
         idx=idx+1
     #roomid 
-    sol["room_id"]=1    
+    sol["room_id"]=room_id
     print(f"🐐🐐SOL FROM AGENT:{sol}")
     return sol
 
@@ -239,41 +252,106 @@ def savePolltoDb(room_id:int,username:str,message:dict,parent:int=None):
     except Exception as e:
         print(f"❌❌🪨🪨POLL NOT SAVED,error:{str(e)}")
 
+@shared_task
+def saveThreadToDb(room_id:int,username:str,message:str)->int:
+    try:
+        from base.models import Message,Room
+        from django.contrib.auth.models import User
+
+        room=Room.objects.get(id=room_id)
+        author=User.objects.get(username=username)
+
+        
+        msg=Message.objects.create(room=room,author=author,message=message)
+        msg.save()
+        return msg.id
+    except Exception as e:
+        print(f"❌❌🪨🪨THREAD NOT SAVED,error:{str(e)}")
+
+@shared_task
+async def connectToWs(tool_called:str,message:str,message_id:int,room_id:int,parent=None):
+    try:
+
+        channel_layer=get_channel_layer()
+        print(f"👤👤✏️✏️✏️CALLED CONNECT TO ES FOR AGENT")
+        await channel_layer.group_send(
+            f"room_{str(room_id)}",
+            {
+                "type":"chat_message",
+                "tool_called":tool_called,
+                "task":"chat",
+                "message": message,  
+                "parent":parent,
+                "username":"Agent",
+                "message_id":message_id,
+                # "status": True
+            }
+        )
+    except Exception  as e:
+        print(f"❌❌ERROR in connect to ws AGENT :{str(e)}")
+
 
 @shared_task
 def start_agent():
-    """
-    1)call main to get result
-    2)save in database 
-    3)(in app)signal->ws
-    """
-    agent_msg=main()
+    try:
+        from base.models import Room,Message
+        from django.db.models import Q
+        from django.utils.dateparse import parse_datetime
 
 
-    newReply = {
-        "message": agent_msg["message"],
-        "task":"AgentActivity",
-        "tool_called":agent_msg["tool_called"] if len(agent_msg)>1 else None,
-        "parent": None,
-    }   
+        """
+        1)call main to get result
+        2)save in database 
+        3)(in app)signal->ws
 
-    savePolltoDb.delay(room_id=agent_msg["room_id"],username="Agent",message=agent_msg["message"])
+        """
+
+        #TODO:ADD POLL CREATED ALSO 
+        agent_msg=None
+        rooms=Room.objects.all()
+
+        day_diff=0
+        hour_diff=0
     
-    # await channel_layer.group_send(
-    #     f"room_{agent_msg["room_id"]}",
-    #     {
-    #         "type":"chat_message",
-    #         "tool_called":agent_msg["tool_called"],
-    #         "task":"AgentActivity",
-    #         # "message":agent_msg["message"],
-    #         "question":agent_msg["message"]["question"],
-    #         "choices":agent_msg["message"]["options"],
-    #         "parent":None,
-    #         "username":"Agent",
-    #         "message_id":message_id,
-    #         "room_id":agent_msg["room_id"],
-    #         "poll_id":poll_id
-    #         # "status": True
-    #     }
-    # )
-    
+        for r in rooms:
+            
+            lastMsg=Message.objects.filter(Q(room__id=r.id)).order_by('-created_at')[0]
+            dt_created=parse_datetime(str(lastMsg.created_at))
+            
+            dt_now=datetime.now()
+
+            if dt_now.day-dt_created.day>=day_diff:
+                
+                agent_msg=main(room_id=r.id,room_name=r.name,room_description=r.description)
+                
+            
+            elif dt_now.hour-dt_created.hour>=hour_diff:
+                agent_msg=main(room_id=r.id,room_name=r.name,room_description=r.description)
+                
+            
+            if agent_msg!=None and "tool_called" in agent_msg:  
+                if agent_msg["tool_called"]=="pollGenerator":
+                    savePolltoDb.delay(room_id=agent_msg["room_id"],username="Agent",message=agent_msg["content"])
+
+                else: 
+                    message_id=saveThreadToDb(room_id=agent_msg["room_id"],username="Agent",message=agent_msg["content"])
+                    asyncio.run(connectToWs(tool_called="threadGenerator",message=agent_msg["content"],message_id=message_id,room_id=r.id))
+            # await channel_layer.group_send(
+            #     f"room_{agent_msg["room_id"]}",
+            #     {
+            #         "type":"chat_message",
+            #         "tool_called":agent_msg["tool_called"],
+            #         "task":"AgentActivity",
+            #         # "message":agent_msg["message"],
+            #         "question":agent_msg["message"]["question"],
+            #         "choices":agent_msg["message"]["options"],
+            #         "parent":None,
+            #         "username":"Agent",
+            #         "message_id":message_id,
+            #         "room_id":agent_msg["room_id"],
+            #         "poll_id":poll_id
+            #         # "status": True
+            #     }
+            # )
+    except Exception as e:
+        print(f"ERROR in starting agent: {str(e)}")
