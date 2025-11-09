@@ -4,3 +4,4 @@ chroma
 celerybeat-schedule
 celerybeat-schedule-shm
 celerybeat-schedule-wal
+migrations

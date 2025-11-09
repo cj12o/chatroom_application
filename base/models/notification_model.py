@@ -10,7 +10,7 @@ from django.db.models import Q,signals
 import asyncio
 
 """FLOW OF NOTIFICATION
-signal postsave Message-->celery Tak(createNotification)->asyncio (send to ws) -->update sent_status 
+signal postsave Message-->celery Tak(createNotification)->asyncio (send to ws) -->update sent_status->consumer valides user 
 """
 
 

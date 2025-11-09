@@ -1,13 +1,5 @@
 from django.contrib import admin
-from .models.userprofile_model import UserProfile
-from .models.room_model import Room
-from .models.message_model import Message,Vote
-from .models.topic_model import Topic
-from .models.user_history_model import History
-from .models.recommendation_model import Recommend
-from .models.poll_model import Poll,PollVote
-from .models.file_log_model import ChatFileLog,MessageSummerizedStatus
-from .models.notification_model import Notification
+from .models import UserProfile,Room,Message,Vote,Topic,History,Recommend,Poll,PollVote,ChatFileLog,MessageSummerizedStatus,Notification,VectorDbAdditionStatus
 # Register your models here.
 
 admin.site.register(UserProfile)
@@ -22,3 +14,4 @@ admin.site.register(Poll)
 admin.site.register(ChatFileLog)
 admin.site.register(MessageSummerizedStatus)
 admin.site.register(Notification)
+admin.site.register(VectorDbAdditionStatus)

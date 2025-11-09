@@ -13,6 +13,8 @@ class RoomSerializer(serializers.ModelSerializer):
     parent_topic=serializers.SerializerMethodField()  
     members=serializers.SerializerMethodField()  
     moderator=serializers.SerializerMethodField()
+    tags=serializers.SerializerMethodField()
+
     class Meta:
         model=Room
         fields='__all__'
@@ -55,7 +57,11 @@ class RoomSerializer(serializers.ModelSerializer):
         dct["id"]=obj.author.id
         dct["name"]=obj.author.username
         return dct
-        
+    
+    def get_tags(self,obj):
+        if len(obj.tags)<1:return []
+        return obj.tags["tags"]
+    
 class RoomSerializerForCreation(serializers.ModelSerializer):
 
     class Meta:

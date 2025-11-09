@@ -146,7 +146,7 @@ def createNotification(json:dict):
         if not notification.sent_status:
             asyncio.run(sendNotificationToWs(json2))
             Notification.objects.get(id=json2["id"]).update(sent_status=True)
-        
+            
 
     #integerity error ,due to race condition
     except Exception as e:
