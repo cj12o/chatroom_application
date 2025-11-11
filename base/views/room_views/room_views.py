@@ -10,7 +10,7 @@ from django.contrib.auth.models import User
 
 from ...models.room_model import Room
 from ...models.userprofile_model import UserProfile
-from ...serializers.room_serializer import RoomSerializer,RoomSerializerForCreation
+from ...serializers.room_serializer import RoomSerializer,RoomSerializerForCreation,RoomSerializerForPagination
 
 
 # from .userRecommendation.chroma import getRecommendation
@@ -60,7 +60,9 @@ class UserRecommendation(APIView):
 class RoomListPagination(PageNumberPagination):
     page_size = 5
 
+
 @api_view(['POST'])
+@authentication_classes([TokenAuthentication])
 def listRooms(request):
     try:
             
@@ -87,13 +89,10 @@ def listRooms(request):
             },status=status.HTTP_200_OK)
             
         """for specific room"""
-
-        
-
-
         result_page=paginator.paginate_queryset(qs, request)
         # print(f"✅✅PAGE RES:{result_page}")
-        serializer=RoomSerializer(result_page,many=True)
+        # print(f"ROOM PAGINATION USER:{request.user.username}")
+        serializer=RoomSerializerForPagination(result_page,context={"username":request.user.username},many=True)
         # print(f"✅✅SERIALIZER RES:{serializer.data}")
 
         if len(serializer.data)<1:

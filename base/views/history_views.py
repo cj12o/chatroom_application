@@ -8,6 +8,7 @@ from ..models.user_history_model import History
 from datetime import datetime
 from django.contrib.auth.models import User
 from ..models import Room
+from ..tasks.recomm_tasks.llm_task import orchestrator
 
 
 @api_view(['POST'])
@@ -38,13 +39,18 @@ def setHistory(request):
                 room_data[room_id]=int(time_spent_room)
                 
 
-        for k,v in room_data.items():
-            room=Room.objects.get(id=k)
-            History.objects.create(user=user,session=session,rooms_visited=room,time_spent=v)
+        # for k,v in room_data.items():
+            # room=Room.objects.get(id=k)
+        user=User.objects.get(id=request.user.id)
+        History.objects.create(user=user,session=session,hist=room_data)
+
+        orchestrator.delay(user.username,2,2)
+        #TODO :call recomm
 
         return Response({
             "message":"succesfully submitted history"
         },status=status.HTTP_200_OK)
+        
     except Exception as e:
         print(f"❌❌Error:{str(e)}")
         return Response({

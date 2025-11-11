@@ -8,10 +8,11 @@ from ..models.userprofile_model import UserProfile
 from.user_serializer import UserSerializer
 from ..views.topic_filter import topicsList
 
-class RoomSerializer(serializers.ModelSerializer):
+class RoomSerializerForPagination(serializers.ModelSerializer):
     author=serializers.SerializerMethodField()
     parent_topic=serializers.SerializerMethodField()  
-    members=serializers.SerializerMethodField()  
+    # members=serializers.SerializerMethodField()  
+    isMember=serializers.SerializerMethodField()
     moderator=serializers.SerializerMethodField()
     tags=serializers.SerializerMethodField()
 
@@ -22,8 +23,7 @@ class RoomSerializer(serializers.ModelSerializer):
     def get_parent_topic(self,obj):
         return obj.parent_topic.topic
     
-    #############
-    def get_members(self,obj):
+    # def get_members(self,obj):
         try:
             room=Room.objects.get(id=obj.id)
             members=room.members.all()
@@ -40,6 +40,13 @@ class RoomSerializer(serializers.ModelSerializer):
         except User.DoesNotExist:
             return []
         
+    def get_isMember(self,obj)->bool:
+        username=self.context["username"]
+        if not username:return False
+        qs=obj.members.filter(Q(username=username))
+        if len(qs)>0:return True
+        return False
+    
     def get_moderator(self,obj):
         lst=[]
         room=Room.objects.get(id=obj.id)
@@ -62,6 +69,60 @@ class RoomSerializer(serializers.ModelSerializer):
         if len(obj.tags)<1:return []
         return obj.tags["tags"]
     
+
+class RoomSerializer(serializers.ModelSerializer):
+    author=serializers.SerializerMethodField()
+    parent_topic=serializers.SerializerMethodField()  
+    members=serializers.SerializerMethodField() 
+    moderator=serializers.SerializerMethodField()
+    tags=serializers.SerializerMethodField()
+
+    class Meta:
+        model=Room
+        fields='__all__'
+
+    def get_parent_topic(self,obj):
+        return obj.parent_topic.topic
+    
+    def get_members(self,obj):
+        try:
+            members=obj.members.all()
+            lst=[]
+            for member in members:
+                dct={}
+                dct["member_id"]=member.id
+                dct["member_name"]=member.username
+                dct["status"]=member.profile.is_online
+                lst.append(dct)
+
+            # print(f"😀😀lst{lst}")
+            return lst
+        except User.DoesNotExist:
+            return []
+    
+    def get_moderator(self,obj):
+        lst=[]
+        room=Room.objects.get(id=obj.id)
+        mods=room.moderator.all()
+        for mod in mods:
+            dct={}
+            dct["id"]=mod.id
+            dct["status"]=UserProfile.objects.get(id=mod.id).is_online
+            dct["username"]=mod.username
+            lst.append(dct)
+        return lst
+    
+    def get_author(self,obj):
+        dct={}
+        dct["id"]=obj.author.id
+        dct["name"]=obj.author.username
+        return dct
+    
+    def get_tags(self,obj):
+        if len(obj.tags)<1:return []
+        return obj.tags["tags"]
+
+
 class RoomSerializerForCreation(serializers.ModelSerializer):
 
     class Meta:

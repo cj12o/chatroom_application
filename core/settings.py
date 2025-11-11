@@ -35,12 +35,6 @@ INSTALLED_APPS = [
     'corsheaders',
     'django_celery_beat',
     'django.contrib.sites',
-    ####OAUTH
-    # 'allauth',
-    # 'allauth.account',
-    # 'allauth.socialaccount',
-    # 'allauth.socialaccount.providers.google',
-    #####
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -153,11 +147,7 @@ STATICFILES_DIRS=(BASE_DIR/'static',)
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels.layers.InMemoryChannelLayer"
-    }
-}
+
 
 CHANNEL_LAYERS = {
     "default": {
@@ -175,3 +165,8 @@ CELERY_TASK_TIME_LIMIT = 30 * 60
 
 # "redis://localhost:6379/0"
 CELERY_RESULT_BACKEND = "django-db"
+
+REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 5
+}

@@ -30,10 +30,9 @@ class MemeberApiView(APIView):
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
 
-    def get(self,request,pk):
+    def patch(self,request,pk):
         try:
             """add memeber to a room for authenticated user"""
-
             room_id=pk
             print(f"ROOM ID:{pk}")
             obj=Room.objects.get(id=room_id)
@@ -42,8 +41,6 @@ class MemeberApiView(APIView):
         except Exception as e:
             print(f"ERROR in adding member:{str(e)}")
             return Response({f"error in adding member {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
-
-
 
 
 

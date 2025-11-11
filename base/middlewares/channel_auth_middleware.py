@@ -1,5 +1,5 @@
-import django
-django.setup()
+# import django
+# django.setup()
 
 from channels.middleware import BaseMiddleware
 from django.contrib.auth.models import User

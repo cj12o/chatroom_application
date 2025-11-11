@@ -3,7 +3,10 @@ from django.conf.urls.static import static
 from django.conf import settings
 
 from ..views import admin_views as av
-from ..views import room_views as rv
+
+from ..views.room_views import room_views as rv
+from ..views.room_views import member_views as mem_v
+
 from ..views import message_views as mv
 from ..views import profile_views as pv
 from ..views import topic_views as tv
@@ -18,6 +21,7 @@ from ..views import poll_views as pollv
 from ..views import notification_views as nv
 # from ..views import recommendation_views as rev
 
+from ..views import test as t
 
 
 
@@ -71,7 +75,10 @@ urlpatterns=[
     path("polls/<int:pk>/",pollv.Pollview.as_view()),
     path("notify/",nv.NotificationView.as_view()),
 
-    # path("notification_tester/",t.TestView.as_view())
+    path("notification_tester/",t.TestView.as_view()),
+
+    #add memebers
+    path("add_member/<int:pk>/",mem_v.MemeberApiView.as_view())
 ]
 
 
