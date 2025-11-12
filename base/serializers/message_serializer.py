@@ -85,6 +85,7 @@ class MessageSerializer(serializers.ModelSerializer):
     def create(self,validated_data):
         author=self.context["request"]["author"]#user instance
         room=self.context["request"]["room"]
+        
         msg=None
         if "parent" in self.context["request"]:
             parent=self.context["request"]["parent"]
@@ -93,6 +94,12 @@ class MessageSerializer(serializers.ModelSerializer):
         else:
             msg=Message.objects.create(author=author,room=room)
         
+        if "file" in self.context["request"]:   
+            msg.file_msg=self.context["request"]["file"]
+        
+        if "image" in self.context["request"]:   
+            msg.images_msg=self.context["request"]["image"]
+
         msg.message=validated_data["message"]
         msg.save()
         return msg

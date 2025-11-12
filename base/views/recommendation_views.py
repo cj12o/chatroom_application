@@ -10,7 +10,7 @@ from ..models.room_model import Room
 from ..models.recommendation_model import Recommend
 from ..serializers.recommendation_serializers import RecommndationSerializer
 
-from .userRecommendation.chroma import getRecommendation
+# from .userRecommendation.chroma import getRecommendation
 
 
 def deleteOldRecom(user_id:int):
@@ -29,37 +29,37 @@ class saveRecommendation(APIView):
 
 
     #TODO sesializer  , delet prev ones
-    def post(self,request):
-        """
-        purpose ->gets recom from llm 
-        and saves in db
-        """
-        try:
-            # delete_old_recomm
-            deleteOldRecom(request.user.id)
+    # def post(self,request):
+        # """
+        # purpose ->gets recom from llm 
+        # and saves in db
+        # """
+        # try:
+        #     # delete_old_recomm
+        #     deleteOldRecom(request.user.id)
 
-            sesh_id=request.data["sessionId"]
-            recom_lst=getRecommendation(request.user.username)
+        #     sesh_id=request.data["sessionId"]
+        #     recom_lst=getRecommendation(request.user.username)
         
-            user=User.objects.get(id=request.user.id)
-            print(f"✅✅Recoom list:{recom_lst}")
+        #     user=User.objects.get(id=request.user.id)
+        #     print(f"✅✅Recoom list:{recom_lst}")
 
-            for obj in recom_lst:
-                #room is safer as llm may give id as str
-                room=Room.objects.get(name=obj["name"])
-                hist=Recommend.objects.create(user=user,room=room,reason=obj["reason"],session=sesh_id)
+        #     for obj in recom_lst:
+        #         #room is safer as llm may give id as str
+        #         room=Room.objects.get(name=obj["name"])
+        #         hist=Recommend.objects.create(user=user,room=room,reason=obj["reason"],session=sesh_id)
             
             
          
         
-            return Response({
-                "message":"saved recomm in db"
-            },status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({
-                "error":str(e),
-                "message":"error in saving recomm in db"
-            },status=status.HTTP_400_BAD_REQUEST)
+        #     return Response({
+        #         "message":"saved recomm in db"
+        #     },status=status.HTTP_200_OK)
+        # except Exception as e:
+        #     return Response({
+        #         "error":str(e),
+        #         "message":"error in saving recomm in db"
+        #     },status=status.HTTP_400_BAD_REQUEST)
 
     def get(self,request):
         """

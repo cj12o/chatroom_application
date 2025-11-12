@@ -10,6 +10,9 @@ from rest_framework.decorators import api_view
 from ..serializers.message_serializer import MessageSerializerForCreation,MessageSerializer
 from ..models.message_model import Message,Vote
 from ..models.room_model import Room
+import logging
+from channels.layers import get_channel_layer
+import asyncio
 
 def helper(id:int,lst:list):
     # message=Message.objects.get(id=id)
@@ -39,8 +42,54 @@ def helper(id:int,lst:list):
         print(f"❌❌Error:{e}")
         # return {}
     
-       
 
+async def sendToWs(room_id:int,message:str,username:str,message_id:int,file_url,image_url):
+    channel_layer=get_channel_layer()
+    if file_url and image_url:
+        await channel_layer.group_send(
+            f"room_{room_id}",
+            {
+                "type": "chat_message",
+                "task":"chat",
+                "message":message, 
+                "file_url":"http://127.0.0.1:8000"+file_url.url,
+                "image_url":"http://127.0.0.1:8000"+image_url.url, 
+                "parent":None,
+                "username":username,
+                "message_id":message_id
+                # "status": True
+            }
+        )
+    elif file_url:
+        await channel_layer.group_send(
+            f"room_{room_id}",
+            {
+                "type": "chat_message",
+                "task":"chat",
+                "message":message, 
+                "file_url":"http://127.0.0.1:8000"+file_url.url,
+                "image_url":None, 
+                "parent":None,
+                "username":username,
+                "message_id":message_id
+                # "status": True
+            }
+        )
+    else:
+        await channel_layer.group_send(
+            f"room_{room_id}",
+            {
+                "type": "chat_message",
+                "task":"chat",
+                "message":message, 
+                "file_url":None,
+                "image_url":"http://127.0.0.1:8000"+image_url.url, 
+                "parent":None,
+                "username":username,
+                "message_id":message_id
+                # "status": True
+            }
+        )
 
 class MessageApiview(APIView):
     permission_classes=[IsAuthenticated]
@@ -54,34 +103,54 @@ class MessageApiview(APIView):
     
 
     """post 1 msg"""
-    def post(self,request,pk):
-        data=request.data
-        room_id=pk
+    def post(self,request,pk,*args,**kwargs):
+        try:
+            data=request.data
+            #file
+            # file=request
+            # logging.fatal(f"{file.FILES["file"]}")
+            room_id=pk
 
-        author=User.objects.get(id=request.user.id)
-        room=Room.objects.get(id=pk)
-        context={"request":{"author":author,"room":room}}
+            author=User.objects.get(id=request.user.id)
+            room=Room.objects.get(id=pk)
 
-        if "parent_id" in data:
-            print("✅✅parent in")
-            parent=Message.objects.get(id=data["parent_id"])
-            context["request"]["parent"]=parent
+            context={"request":{"author":author,"room":room}}
 
-        serializer=MessageSerializer(data=data,partial=False,context=context)
-        # print(f"{serializer}")
+            if request.FILES:
+                if request.FILES.get("file"):
+                    file=request.FILES.get("file")
+                    context["request"]["file"]=file
+                
+                if request.FILES.get("image"):
+                    image=request.FILES.get("image")
+                    context["request"]["image"]=image
         
-        if serializer.is_valid():
-            serializer.save()
-            return Response({
-                "msg_lst":serializer.data,
-                "message":"posted msg"
-            },status=status.HTTP_200_OK)
 
-        return Response({
-            "error":serializer.errors,
-            "message":"error in posting msg"
-        },status=status.HTTP_400_BAD_REQUEST)   
-    
+            
+            if "parent_id" in data:
+                print("✅✅parent in")
+                parent=Message.objects.get(id=data["parent_id"])
+                context["request"]["parent"]=parent
+
+            serializer=MessageSerializer(data=data,partial=False,context=context)
+            # print(f"{serializer}")
+            
+            if serializer.is_valid():
+                msg=serializer.save()
+                asyncio.run(sendToWs(room_id=msg.room.id,message=msg.message,username=msg.author.username,message_id=msg.id,file_url=msg.file_msg,image_url=msg.images_msg))
+                return Response({
+                    "message":"posted msg"
+                },status=status.HTTP_200_OK)
+            
+
+
+        except Exception as e:
+            logging.fatal(f"ERROR in message view:{str(e)}")
+            return Response({
+                # "error":serializer.errors,
+                "message":"error in posting msg"
+            },status=status.HTTP_400_BAD_REQUEST)   
+        
 
     def get(self,request,pk):
         messages=Message.objects.filter(Q(parent=None))

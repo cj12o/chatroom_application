@@ -10,7 +10,7 @@ from ..views.room_views import member_views as mem_v
 from ..views import message_views as mv
 from ..views import profile_views as pv
 from ..views import topic_views as tv
-from ..views.userRecommendation import chroma as cv
+
 from ..views import history_views as hv
 
 from ..views import vote_views as vv
@@ -19,7 +19,7 @@ from ..views import vote_views as vv
 
 from ..views import poll_views as pollv
 from ..views import notification_views as nv
-# from ..views import recommendation_views as rev
+from ..views import recommendation_views as rev
 
 from ..views import test as t
 
@@ -38,7 +38,7 @@ urlpatterns=[
     #User recommendation
     # path("rooms/recommend/",rv.UserRecommendation.as_view()),
     #recomm save
-    # path("rooms/saveRecomm/",rev.saveRecommendation.as_view()),
+    path("rooms/saveRecomm/",rev.saveRecommendation.as_view()),
 
     path("rooms/operations/",rv.RoomApiview.as_view()),
 
