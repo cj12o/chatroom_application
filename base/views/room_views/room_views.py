@@ -8,11 +8,11 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication,BaseAuthentication
 from django.contrib.auth.models import User
 
-from ...models.room_model import Room
-from ...models.userprofile_model import UserProfile
-from ...serializers.room_serializer import RoomSerializer,RoomSerializerForCreation,RoomSerializerForPagination
+from base.models import Room,UserProfile,Topic
+from ...serializers.room_serializer import RoomSerializer,RoomSerializerForPagination,RoomSerializerForCreation
 
-
+from ..logger import logger
+from ..topic_filter import topicsList
 # from .userRecommendation.chroma import getRecommendation
 
 from django.core.paginator import Paginator
@@ -123,12 +123,12 @@ class RoomApiview(APIView):
     def get_permissions(self):
         if self.request.method=="GET":
             return []
-        return [IsAuthenticated]
+        else:return [IsAuthenticated()]
 
     def get_authenticators(self):
         if self.request.method=="GET":
             return []
-        return [TokenAuthentication]
+        else:return [TokenAuthentication()]
     
     #create new Room
     def get(self,request):
@@ -144,78 +144,49 @@ class RoomApiview(APIView):
         except Exception as e:
             return Response({"message":f"Error in getting room {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
 
-    def post(self,request):
-        data=request.data
-        print(f"User{request.user}")
-        user=User.objects.get(username=request.user)
-        serializer=RoomSerializerForCreation(data=data,context={
-            'request':user
-        })
-        if serializer.is_valid():
-            room=serializer.save()
-            if "moderator" in data:
-                for moderator in data["moderator"]:
-                    mod=User.objects.get(username=moderator)
-                    room.moderator.add(mod)
-            else:
-                room.moderator.add(user)
-            room.save()
-            print(f"Serializer data{serializer.data}")
-
-            #add to db
-            # collection.add(
-            #     ids=["90"],
-            #     documents=[
-            #         f"name={serializer.data["name"]} description={serializer.data["description"]}" 
-            #     ]
-            # )
-
-
-            return Response({
-                "roomdata":serializer.data,
-                "message":"Room created"
-            },status=status.HTTP_200_OK)
-        
-        return Response({
-            "error":serializer.errors,
-            "message":"error in Room creation"
-        },status=status.HTTP_400_BAD_REQUEST)
-    
+   
     def patch(self,request):
-        """
-        for room owner  
-        """
-        data=request.data
-        room=Room.objects.get(Q(author__username=request.user)&Q(id=data["id"]))
-        serializer=RoomSerializerForCreation(data=data,instance=room,partial=True)
+        try:
+            """
+            for room owner  
+            """
+            data=request.data
+            room=Room.objects.get(Q(author__username=request.user.username)&Q(id=data["id"]))
+            serializer=RoomSerializerForCreation(data=data,instance=room,partial=True)
 
-        if serializer.is_valid():
-            serializer.save()
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    "roomdata":serializer.data,
+                    "message":"Room updated"
+                },status=status.HTTP_200_OK)
+            
+        except Exception as e:    
+            logger.error(e)
             return Response({
-                "roomdata":serializer.data,
-                "message":"Room updated"
-            },status=status.HTTP_200_OK)
-        
-        return Response({
-            "error":serializer.errors,
-            "message":"error in Room updation"
-        },status=status.HTTP_400_BAD_REQUEST)
+                "error":str(e),
+                "message":"error in Room updation"
+            },status=status.HTTP_400_BAD_REQUEST)
     
-    def put(self,request):
-        data=request.data
-        room=Room.objects.get(Q(author__username=request.user)&Q(id=data["id"]))
-        serializer=RoomSerializerForCreation(data=data,instance=room,partial=False)
-        if serializer.is_valid():
-            serializer.save()
+
+    def post(self,request):
+        try:
+            data=request.data
+            
+            serializer=RoomSerializerForCreation(data=data,context={
+                'request':request
+            })
+            if serializer.is_valid():
+                room=serializer.save()
+                
             return Response({
-                "roomdata":serializer.data,
-                "message":"Room updated"
+                "msg":"room done"
             },status=status.HTTP_200_OK)
-        
-        return Response({
-            "error":serializer.errors,
-            "message":"error in Room updation"
-        },status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(e)
+            return Response({
+                "msg":"room not created"
+            },status=status.HTTP_400_BAD_REQUEST)
     
     def delete(self,request):
         data=request.data

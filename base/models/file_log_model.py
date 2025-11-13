@@ -66,9 +66,10 @@ def signal_receiver(sender,instance,created,**kwargs):
 
 
 @receiver(signals.post_save,sender=Room)
-def create_Chat_file(sender,instance,**kwargs):
+def create_Chat_file(sender,instance,created,**kwargs):
+    if not created:return 
     "init file"
     chat_file_path=os.path.join(base_dir,f"media/text_rag_files/{instance.name}.txt")
-    fileobj=ChatFileLog.objects.create(room=instance)
+    fileobj=ChatFileLog.objects.update_or_create(room=instance)
     fileobj.fileLocation=chat_file_path
     fileobj.save()

@@ -7,6 +7,9 @@ from ..models.userprofile_model import UserProfile
 
 from.user_serializer import UserSerializer
 from ..views.topic_filter import topicsList
+from ..views.logger import logger
+import json
+from ..views.topic_filter import topicsList
 
 class RoomSerializerForPagination(serializers.ModelSerializer):
     author=serializers.SerializerMethodField()
@@ -123,38 +126,58 @@ class RoomSerializer(serializers.ModelSerializer):
         return obj.tags["tags"]
 
 
+
+
 class RoomSerializerForCreation(serializers.ModelSerializer):
+    moderator = serializers.ListField(
+        child=serializers.CharField(), write_only=True
+    )
 
     class Meta:
-        model=Room
-        fields=['name','description','topic','is_private']
-    
-    def create(self,validated_data):
-        
-        # room=Room.objects.create(author=self.context["request"])
-        name=validated_data["name"]
-        description=validated_data["description"]
-        topic=validated_data["topic"]
-        ####
-        main_topic=topicsList(validated_data["topic"])
-        print(f"✅✅✅main topic:{main_topic}")
-        
-        parent_topic=Topic.objects.get(topic=main_topic)
-        ####
-        is_private=False
-        if "is_private" in validated_data:
-            is_private=validated_data["is_private"]
-        
-        room=Room.objects.create(author=self.context["request"],name=name,description=description,topic=topic,parent_topic=parent_topic,is_private=is_private)
-        room.save()
+        model = Room
+        fields = ['name', 'description', 'topic', 'is_private', 'moderator','tags']
 
-        # if "moderator" in validated_data:
-        #     for moderator in validated_data["moderator"]:
-        #         print(f"-----------MOD name:{moderator}")
-        #         mod=User.objects.get(username=moderator)
-        #         room.moderator.add(mod)
-        # else:
-        #     room.moderator.add(self.context["request"])
+    def create(self, validated_data):
+        moderators = validated_data.pop("moderator", [])
+        user = self.context["request"].user
+
+        main_topic = topicsList(validated_data["topic"])
+        parent_topic = Topic.objects.get(topic=main_topic)
+
+        room = Room.objects.create(
+            author=user,
+            **validated_data,
+            parent_topic=parent_topic,
+        )
+
+        # Add moderators
+        users = User.objects.filter(username__in=moderators)
+        room.moderator.set(users)
+
         return room
-        
-        
+
+
+    def update(self, instance, validated_data):
+        try:
+            for attr,v in validated_data.items():
+                if attr not in ["id","moderator","topic"]:
+                    setattr(instance,attr,v)
+                
+                if "topic" in validated_data:
+                    parent_topic=topicsList(validated_data["topic"])
+                    parent_topic_obj=Topic.objects.get(topic=parent_topic)
+                    instance.parent_topic=parent_topic_obj
+                    instance.topic=validated_data["topic"]
+
+                if "moderator" in validated_data:
+                    mods=User.objects.filter(username__in=validated_data["moderator"])
+                    instance.moderator.set(mods)
+            
+            instance.save()
+            print(f"parent_topic={instance.parent_topic.topic}")
+
+            return instance
+
+        except Exception as e:
+            logger.error(e)
+            
