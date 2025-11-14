@@ -10,7 +10,7 @@ from rest_framework.decorators import api_view
 from ..serializers.message_serializer import MessageSerializerForCreation,MessageSerializer
 from ..models.message_model import Message,Vote
 from ..models.room_model import Room
-import logging
+from .logger import logger
 from channels.layers import get_channel_layer
 import asyncio
 
@@ -145,7 +145,7 @@ class MessageApiview(APIView):
 
 
         except Exception as e:
-            logging.fatal(f"ERROR in message view:{str(e)}")
+            logger.fatal(f"ERROR in message view:{str(e)}")
             return Response({
                 # "error":serializer.errors,
                 "message":"error in posting msg"
@@ -172,18 +172,23 @@ class MessageApiview(APIView):
    
     """pk is message id"""
     def delete(self,request,pk):
-        # pk:msgid
-        #if room is rmpty
-        msg=Message.objects.get(Q(author__id=request.user.id) & Q(id=pk))
-        if msg:
-            msg.delete()
+        try:
+            id=request.GET.get('id')
+            print(f"ID:{id}")
+            msg=Message.objects.get(Q(author__id=request.user.id) & Q(room__id=pk) & Q(id=id))
+            if msg:
+                msg.delete()
+                return Response({
+                    "message":"deleted message"
+                },status=status.HTTP_200_OK) 
+            else: raise Exception("no msg with such id")
+        except Exception as e:
+            logger.error(e)
             return Response({
-                "message":"deleted message"
-            },status=status.HTTP_200_OK) 
-        return Response({
-            "error":"Invalid room or author",
-            "message":"error in posting msg"
-        },status=status.HTTP_400_BAD_REQUEST) 
+                "error":str(e),
+                "message":"error in deleting msg"
+            },status=status.HTTP_400_BAD_REQUEST)
+
     
     
     def patch(self,request,pk):
