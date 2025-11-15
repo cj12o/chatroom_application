@@ -58,63 +58,52 @@ class UserRecommendation(APIView):
             
 
 class RoomListPagination(PageNumberPagination):
-    page_size = 5
+    page_size = 3
 
 
 @api_view(['POST'])
 @authentication_classes([TokenAuthentication])
 def listRooms(request):
     try:
-            
-        """
-        Purpose->return all rooms list
-        Input->1){} or {"topic":" "} returns full list
-            2){"topic":"parent_topic"} returns filtered
-
-        attached->home page
-        """
         paginator=RoomListPagination()
+        need=request.data["need"] #need=[parent topic filter:2,search bar specific :1,searchbar random]
         
-        qs=Room.objects.all()
 
-        ##FOR PARENT TOPIC FILTERING
-        if "topic" in request.data and request.data["topic"].strip()!="":
-            topic=request.data["topic"]
-            qs=qs.filter(Q(parent_topic__topic=topic))
-            # print(f"QS:{qs}")
-            if len(qs)<1:
-                return Response({
-                "rooms":[],
-                "message":"list of Rooms"
-            },status=status.HTTP_200_OK)
-            
-        """for specific room"""
+        qs=None
+
+        if need==1:
+            "case when from search bar a prticular romm is selected"
+            id=request.data["id"]
+            qs=Room.objects.filter(id=id)
+        
+        elif need==2:
+            "case of parent topic filtering "
+            topic=request.data["keyword"]
+            qs=Room.objects.filter(Q(parent_topic__topic=topic))
+
+        else:
+            "random word in search bar so dynamic searching"
+            keyword=request.data["keyword"].strip().lower()
+            qs=Room.objects.filter(
+            Q(name__icontains=keyword)|
+            Q(parent_topic__topic__icontains=keyword)|
+            Q(author__username__icontains=keyword)|
+            Q(tags__icontains=keyword)).order_by("-updated_at","-created_at")
+
         result_page=paginator.paginate_queryset(qs, request)
-        # print(f"✅✅PAGE RES:{result_page}")
-        # print(f"ROOM PAGINATION USER:{request.user.username}")
+        
         serializer=RoomSerializerForPagination(result_page,context={"username":request.user.username},many=True)
-        # print(f"✅✅SERIALIZER RES:{serializer.data}")
-
-        if len(serializer.data)<1:
-            return Response({
-                "message":"No matching keywords"
-            },status=status.HTTP_400_BAD_REQUEST)
         
-        if serializer.data:
-            # print(f"✅✅Serializers:{serializer}")
-            
-            return paginator.get_paginated_response(serializer.data)
-
-        
-        return Response({
-            "message":"error in getting room list",
-            "error":serializer.errors
-        },status=status.HTTP_400_BAD_REQUEST)
+        return paginator.get_paginated_response(serializer.data)
+       
     except Exception as e:
-        print(f"❌❌Error:{e}")
+        logger.error(e)
         return Response({
-            "ERROR":e
+            "ERROR":str(e)
         },status=status.HTTP_400_BAD_REQUEST)
+    
+
+
 
 class RoomApiview(APIView):
     permission_classes=[IsAuthenticated]
