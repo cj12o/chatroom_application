@@ -1,17 +1,17 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status   
-from django.db.models import Q
-from base.models import Message
-
+import logging
 from django.conf import settings
+import os
+from celery import shared_task
+import joblib
+from django.db.models import Q
 
-from base.views.logger import logger
 
 """setuped to run every k minutes"""
 def moderate(corpus:list[tuple[int,str]])->list[int]:
-
+    from base.views.logger import logger
     from base.tasks.moderation_task.load_model import VECTORIZER,MODEL
+    
+    """model prediction gets returned"""
     try:
         
         results_vec={}
@@ -38,7 +38,12 @@ def moderate(corpus:list[tuple[int,str]])->list[int]:
         logger.error(e)
         
 
+
+
+@shared_task
 def start_moderation():
+    from base.models import Message
+    from base.views.logger import logger
     """changes message content"""
     try:
        
@@ -54,29 +59,15 @@ def start_moderation():
         new_message=f"🛡️ Removed by Automatic room moderation ,message was found to be :toxic"
 
         for message_id in result:
-            Message.objects.filter(id=message_id).update(message=new_message,is_moderated=True)
+            msg=Message.objects.get(id=message_id)
+            msg.message=new_message
+            msg.is_moderated=True
             
+        
         
     except Exception as e:
         print(f"ERROR IN START_mod :{str(e)}")
         logger.error(e)
 
 
-
-
-
-
-
-class TestView(APIView):
-
-    def get(self,request):    
-        try:
-            start_moderation()
-            return Response({
-                "msg":"ok"
-            },status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({
-                "error":str(e)
-            },status=status.HTTP_400_BAD_REQUEST)
 

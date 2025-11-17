@@ -66,24 +66,26 @@ class RoomListPagination(PageNumberPagination):
 def listRooms(request):
     try:
         paginator=RoomListPagination()
-        need=request.data["need"] #need=[parent topic filter:2,search bar specific :1,searchbar random]
-        
+        need=int(request.GET.get("need",-1)) #need=[parent topic filter:2,search bar specific :1,searchbar random]
+        keyword=request.GET.get("keyword","")
 
         qs=None
-
-        if need==1:
+        if need==-1:
+            "case of all rooms"
+            qs=Room.objects.distinct("parent_topic__topic").order_by("parent_topic__topic","-updated_at","-created_at")
+        
+        elif need==1:
             "case when from search bar a prticular romm is selected"
-            id=request.data["id"]
-            qs=Room.objects.filter(id=id)
+            qs=Room.objects.filter(id=int(keyword))
         
         elif need==2:
             "case of parent topic filtering "
-            topic=request.data["keyword"]
-            qs=Room.objects.filter(Q(parent_topic__topic=topic))
+            qs=Room.objects.filter(Q(parent_topic__topic=str(keyword)))
 
         else:
+
             "random word in search bar so dynamic searching"
-            keyword=request.data["keyword"].strip().lower()
+            keyword=str(keyword).strip().lower()
             qs=Room.objects.filter(
             Q(name__icontains=keyword)|
             Q(parent_topic__topic__icontains=keyword)|
@@ -216,7 +218,6 @@ def getOnlineusers(request,pk):
     })
 
 
-    
     
 
     

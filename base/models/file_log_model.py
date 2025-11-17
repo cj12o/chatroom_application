@@ -48,7 +48,7 @@ def signal_receiver(sender,instance,created,**kwargs):
     global q,msg_id_q
     
 
-    if created:
+    if created and not instance.is_moderated:
         msg_new_obj=MessageSummerizedStatus.objects.create(message=instance)
         q.put(instance.message)
         msg_id_q.put(instance.id)
