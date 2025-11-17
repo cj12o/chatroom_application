@@ -8,6 +8,7 @@ from celery import shared_task
 from django.db.models import Q
 import logging
 from asgiref.sync import sync_to_async
+from django.conf import settings
 """Periodic task(INSERTS data in vector db) celery beat/per rooom(future scope) """
 
 def dbOp():
@@ -69,7 +70,10 @@ def populate():
     from base.models import VectorDbAdditionStatus
     try:
         # ✅ Always create the client once per process
-        chroma_client = chromadb.HttpClient(host="localhost", port=3000)
+        chroma_client = chromadb.HttpClient(
+            host=settings.CHROMA_HOST,
+            port=settings.CHROMA_PORT,
+        )
 
         # ✅ Get or create the target collection
         collection = chroma_client.get_or_create_collection("all_rooms_data")

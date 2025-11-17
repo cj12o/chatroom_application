@@ -6,6 +6,7 @@ from rest_framework.authentication import TokenAuthentication,BaseAuthentication
 from rest_framework import status
 from django.db.models import Q
 from rest_framework.decorators import api_view
+from django.conf import settings
 
 from ..serializers.message_serializer import MessageSerializerForCreation,MessageSerializer
 from ..models.message_model import Message,Vote
@@ -43,8 +44,16 @@ def helper(id:int,lst:list):
         # return {}
     
 
+def _build_absolute_media_url(resource):
+    if not resource:
+        return None
+    return f"{settings.SITE_BASE_URL}{resource.url}"
+
+
 async def sendToWs(room_id:int,message:str,username:str,message_id:int,file_url,image_url):
     channel_layer=get_channel_layer()
+    file_path=_build_absolute_media_url(file_url)
+    image_path=_build_absolute_media_url(image_url)
     if file_url and image_url:
         await channel_layer.group_send(
             f"room_{room_id}",
@@ -52,8 +61,8 @@ async def sendToWs(room_id:int,message:str,username:str,message_id:int,file_url,
                 "type": "chat_message",
                 "task":"chat",
                 "message":message, 
-                "file_url":"http://127.0.0.1:8000"+file_url.url,
-                "image_url":"http://127.0.0.1:8000"+image_url.url, 
+                "file_url":file_path,
+                "image_url":image_path, 
                 "parent":None,
                 "username":username,
                 "message_id":message_id
@@ -67,7 +76,7 @@ async def sendToWs(room_id:int,message:str,username:str,message_id:int,file_url,
                 "type": "chat_message",
                 "task":"chat",
                 "message":message, 
-                "file_url":"http://127.0.0.1:8000"+file_url.url,
+                "file_url":file_path,
                 "image_url":None, 
                 "parent":None,
                 "username":username,
@@ -83,7 +92,7 @@ async def sendToWs(room_id:int,message:str,username:str,message_id:int,file_url,
                 "task":"chat",
                 "message":message, 
                 "file_url":None,
-                "image_url":"http://127.0.0.1:8000"+image_url.url, 
+                "image_url":image_path, 
                 "parent":None,
                 "username":username,
                 "message_id":message_id

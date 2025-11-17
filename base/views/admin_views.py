@@ -6,6 +6,7 @@ from django.db.models import Q
 from rest_framework.authentication import SessionAuthentication, BasicAuthentication,TokenAuthentication
 from rest_framework.permissions import IsAuthenticated,IsAdminUser
 from rest_framework.decorators import api_view
+from django.conf import settings
 
 # token = Token.objects.create(user=...)
 # print(token.key)
@@ -26,7 +27,7 @@ class LoginApiview(APIView):
             
             profile_pic=None
             if user.profile.profile_pic:
-                profile_pic="http://127.0.0.1:8000"+user.profile.profile_pic.url
+                profile_pic=f"{settings.SITE_BASE_URL}{user.profile.profile_pic.url}"
             
             return Response({
             "userdata":serializer.data,

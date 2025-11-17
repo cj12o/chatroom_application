@@ -8,6 +8,7 @@ from langchain_openai import ChatOpenAI
 import os
 from dotenv import load_dotenv
 from langchain.messages import AnyMessage,SystemMessage
+from django.conf import settings
 
 from channels import layers
 import asyncio
@@ -37,9 +38,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 llm=ChatOpenAI(
-    base_url=os.getenv("LLM_BASE_URL"),
-    model=os.getenv("LLM"),
-    api_key=os.getenv("LLM_API_KEY")
+    base_url=settings.LLM_BASE_URL,
+    model=settings.LLM_MODEL_NAME,
+    api_key=settings.LLM_API_KEY
 )
 
 @shared_task

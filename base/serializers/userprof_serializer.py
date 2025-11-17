@@ -2,6 +2,7 @@ from rest_framework import serializers
 from ..models.userprofile_model import UserProfile
 from ..models.room_model import Room
 from ..models.message_model import Message
+from django.conf import settings
 
 class UserProfSerializer(serializers.ModelSerializer):
     profile_pic=serializers.SerializerMethodField()
@@ -11,7 +12,7 @@ class UserProfSerializer(serializers.ModelSerializer):
 
     def get_profile_pic(self,obj):
         if obj.profile_pic:
-            return "http://127.0.0.1:8000"+obj.profile_pic.url
+            return f"{settings.SITE_BASE_URL}{obj.profile_pic.url}"
         return None
 
 

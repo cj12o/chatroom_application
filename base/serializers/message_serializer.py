@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from ..models.message_model import Message,Vote
 from django.db.models import Q
+from django.conf import settings
 
 
 class MessageSerializerForCreation(serializers.Serializer):
@@ -35,7 +36,7 @@ class MessageSerializerForCreation(serializers.Serializer):
     
     def get_images_msg(self,obj):
         try:
-            return "http://127.0.0.1:8000"+obj.images_msg.url
+            return f"{settings.SITE_BASE_URL}{obj.images_msg.url}"
         except Exception as e:
             # print(f"Error in image {e}")
             return None
@@ -43,7 +44,7 @@ class MessageSerializerForCreation(serializers.Serializer):
     
     def get_file_msg(self,obj):
         try:
-            return "http://127.0.0.1:8000"+obj.file_msg.url
+            return f"{settings.SITE_BASE_URL}{obj.file_msg.url}"
         except Exception as e:
             return None
     

@@ -11,21 +11,37 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 import os
 from pathlib import Path
+from django.core.exceptions import ImproperlyConfigured
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv(BASE_DIR / ".env")
+
+
+def get_env_setting(key: str, default=None, required: bool = False):
+    value = os.getenv(key, default)
+    if required and value is None:
+        raise ImproperlyConfigured(f"Set the {key} environment variable")
+    return value
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-e8c3$w#i9%1t9sf$=m%a@$0-b^h@$azja7)5kn)50(u6)88!$6'
+SECRET_KEY = get_env_setting("DJANGO_SECRET_KEY", required=True)
+
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = get_env_setting("DJANGO_DEBUG", "True").lower() in ("true", "1", "yes", "on")
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in get_env_setting("DJANGO_ALLOWED_HOSTS", "").split(",")
+    if host.strip()
+]
 
 
 # Application definition
@@ -86,11 +102,11 @@ ASGI_APPLICATION = "core.asgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME':'ChatApp',
-        'USER':'postgres',
-        'PASSWORD':'1234',
-        'HOST':"localhost",
-        'PORT':"5432",
+        'NAME': get_env_setting("POSTGRES_DB", "ChatApp"),
+        'USER': get_env_setting("POSTGRES_USER", "postgres"),
+        'PASSWORD': get_env_setting("POSTGRES_PASSWORD", "1234"),
+        'HOST': get_env_setting("POSTGRES_HOST", "localhost"),
+        'PORT': get_env_setting("POSTGRES_PORT", "5432"),
     }
 }
 
@@ -149,24 +165,35 @@ CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
 
+REDIS_HOST = get_env_setting("REDIS_HOST", "127.0.0.1")
+REDIS_PORT = int(get_env_setting("REDIS_PORT", "6379"))
+REDIS_URL = get_env_setting("REDIS_URL", f"redis://{REDIS_HOST}:{REDIS_PORT}/0")
+
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)],
+            "hosts": [(REDIS_HOST, REDIS_PORT)],
         },
     }
 }
 
-CELERY_BROKER_URL="redis://localhost:6379/0"
+CELERY_BROKER_URL = get_env_setting("CELERY_BROKER_URL", REDIS_URL)
 CELERY_TIMEZONE = "Asia/Kolkata"
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
 
 # "redis://localhost:6379/0"
-CELERY_RESULT_BACKEND = "django-db"
+CELERY_RESULT_BACKEND = get_env_setting("CELERY_RESULT_BACKEND", "django-db")
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 5
 }
+
+SITE_BASE_URL = get_env_setting("SITE_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+LLM_BASE_URL = get_env_setting("LLM_BASE_URL", "http://127.0.0.1:1239/v1/")
+LLM_MODEL_NAME = get_env_setting("LLM_MODEL_NAME", "hermes-3-llama-3.2-3b")
+LLM_API_KEY = get_env_setting("LLM_API_KEY", "lm_studio")
+CHROMA_HOST = get_env_setting("CHROMA_HOST", "localhost")
+CHROMA_PORT = int(get_env_setting("CHROMA_PORT", "3000"))

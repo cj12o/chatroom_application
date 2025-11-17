@@ -6,6 +6,12 @@ from django.dispatch import receiver
 from channels.layers import get_channel_layer
 import asyncio
 from ..views.logger import logger
+from redis import Redis
+from base.tasks import start_moderation
+
+reddis=Redis(host='localhost', port=6379)
+K=5
+
 class Message(models.Model):
     room = models.ForeignKey(to=Room,on_delete=models.CASCADE,related_name="room_message")
     author=models.ForeignKey(to=User,on_delete=models.CASCADE,related_name="author_message")
@@ -52,7 +58,7 @@ async def connectToWs(case:int,*args)->None:
                 f"room_{room_id}",
                 {
                     "type": "chat_message",
-                    "task":"chat",
+                    "task":"moddedMessage",
                     "message": message,  
                     "parent":parent,
                     "username":username,
@@ -74,8 +80,17 @@ def delete_message(sender,instance,**kwargs):
 
 @receiver(sender=Message,signal=post_save)
 def send_modded_message(sender,created,instance,**kwargs):
+    global K
     try:
-        if not created or not instance.is_moderated: return
-        asyncio.run(connectToWs(2,instance.message,instance.parent.id,instance.author.username,instance.id))
+        if not created and instance.is_moderated:return
+        reddis.incr(name="unmodded",amount=1)
+        print(f"Message count:{reddis.get("unmodded")}")
+        
+        if int(reddis.get("unmodded"))>=K:
+            start_moderation.delay()
+            print(f"Reached{K}")
+            reddis.set(name="unmodded",value=int(reddis.get("unmodded"))-K)
+
     except Exception as e:
         logger.error(e)
+

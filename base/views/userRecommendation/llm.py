@@ -2,6 +2,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from pydantic import BaseModel,Field
 from typing import List
+from django.conf import settings
 
 class RoomFormat(BaseModel):
     room_name:str=Field(description="room_name")
@@ -12,9 +13,9 @@ class RespFormat(BaseModel):
     recommendation:List[RoomFormat]
 
 llm=ChatOpenAI(
-    base_url="http://127.0.0.1:1239/v1/",
-    model="hermes-3-llama-3.2-3b",
-    api_key="lm_studio",
+    base_url=settings.LLM_BASE_URL,
+    model=settings.LLM_MODEL_NAME,
+    api_key=settings.LLM_API_KEY,
     streaming=True,
 )
 

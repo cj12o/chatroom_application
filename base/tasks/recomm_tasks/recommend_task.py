@@ -7,6 +7,7 @@ import chromadb
 "GET user recomm "
 import chromadb
 import logging
+from django.conf import settings
 
 
 # @shared_task
@@ -63,7 +64,10 @@ def getCosinSimRooms(user_history_dict:dict)->list:
     from base.models import Room
     try:
 
-        chroma_client =chromadb.HttpClient(host='localhost',port=3000)
+        chroma_client =chromadb.HttpClient(
+            host=settings.CHROMA_HOST,
+            port=settings.CHROMA_PORT,
+        )
         collection=chroma_client.get_or_create_collection("all_rooms_data")
         
         res_lst=[]

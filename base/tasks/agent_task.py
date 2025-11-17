@@ -11,17 +11,13 @@ import json
 from datetime import datetime,date
 import asyncio
 
-import os
 from channels.layers import get_channel_layer
-
-from dotenv import load_dotenv
-
-load_dotenv()
+from django.conf import settings
 
 llm=ChatOpenAI(
-    base_url=os.getenv("LLM_BASE_URL"),
-    model=os.getenv("LLM"),
-    api_key=os.getenv("LLM_API_KEY")
+    base_url=settings.LLM_BASE_URL,
+    model=settings.LLM_MODEL_NAME,
+    api_key=settings.LLM_API_KEY
 )
 
 # ------------------------------------------AGENT------------------------------------------------
