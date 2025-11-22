@@ -24,9 +24,9 @@ class Message(models.Model):
     is_moderated=models.BooleanField(default=False)    
 
 class Vote(models.Model):
-    user=models.ForeignKey(to=User,on_delete=models.CASCADE)
-    message=models.ForeignKey(to=Message,on_delete=models.CASCADE)
-    room=models.ForeignKey(to=Room,on_delete=models.CASCADE)
+    user=models.ForeignKey(to=User,on_delete=models.CASCADE,related_name="user_votes")
+    message=models.ForeignKey(to=Message,on_delete=models.CASCADE,related_name="message_votes")
+    room=models.ForeignKey(to=Room,on_delete=models.CASCADE,related_name="room_votes")
     vote=models.SmallIntegerField(choices=[(1,"upvote"),(-1,"downvote")])
 
     class Meta:
