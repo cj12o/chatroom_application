@@ -10,70 +10,85 @@ from ..serializers.userprof_serializer import UserProfSerializer,RoomsCreatedSer
 from ..serializers.room_serializer import RoomSerializer
 from ..models.userprofile_model import UserProfile
 from ..models.room_model import Room
+from ..views.logger import logger
+from django.conf import settings
 
 class UserProfileApiview(APIView):
 
     """get user profile pk is userid"""
 
-    # def get_permissions(self):
-    #     if self.request.method=="GET":
-    #         return []
-    #     else: return [IsAuthenticated()]
+    def get_permissions(self):
+        if self.request.method=="GET":
+            return []
+        else: return [IsAuthenticated()]
 
+    def get_authenticators(self):
+        if self.request.method=="GET":
+            return []
+        else: return [TokenAuthentication()]
+
+        
     def get(self,request,q):
-        user=User.objects.get(username=q)
-        # print(f"✅✅user=>{user}")
-        if not user:
-            return Response({
-                "message":"Invalid user"
-            })
-        print(f"✅✅USER:{user}")
-        userprofile=UserProfile.objects.filter(Q(user__username=q))
-        serializer=UserProfSerializer(userprofile,many=True,context={'request':request})
-        if serializer:
-            #####
-            rooms=Room.objects.filter(Q(author__username=q))
-            serializer_room=RoomsCreatedSerializer(rooms,many=True)
+        try:
+            user=User.objects.get(username=q)
+            # print(f"✅✅user=>{user}")
+            if not user:
+                return Response({
+                    "message":"Invalid user"
+                })
+            print(f"✅✅USER:{user}")
+            userprofile=UserProfile.objects.filter(Q(user__username=q))
+            serializer=UserProfSerializer(userprofile,many=True,context={'request':request})
+            if serializer:
+                #####
+                rooms=Room.objects.filter(Q(author__username=q))
+                serializer_room=RoomsCreatedSerializer(rooms,many=True)
 
-            ###member
-            member_room=user.room_member.all()
-            # print(f"✅✅memeber of rooms:{member_room}")
-            
+                ###member
+                member_room=user.room_member.all()
+                # print(f"✅✅memeber of rooms:{member_room}")
+                
 
-            member_room_lst=[]
-            if member_room:
-                for room in member_room:
-                    dct={}
-                    dct["name"]=room.name
-                    dct["id"]=room.id
-                    member_room_lst.append(dct)
-                    # print(f"😀😀room:{room.name}")
+                member_room_lst=[]
+                if member_room:
+                    for room in member_room:
+                        dct={}
+                        dct["name"]=room.name
+                        dct["id"]=room.id
+                        member_room_lst.append(dct)
+                        # print(f"😀😀room:{room.name}")
 
 
-            resp={"userdata":serializer.data,
-                    "name":str(user.username),
-                    "rooms_member":member_room_lst,
-                    "email":user.email
-                 }
-            ##
-            if serializer_room :
-                lst=[]
-                for room in serializer_room.data:
-                    dct={}
-                    dct["name"]=room["name"]
-                    dct["id"]=room["id"]
-                    lst.append(dct)
-                resp["rooms_created"]=lst
+                resp={"userdata":serializer.data,
+                        "name":str(user.username),
+                        "rooms_member":member_room_lst,
+                        "email":user.email
+                    }
+                ##
+                if serializer_room :
+                    lst=[]
+                    for room in serializer_room.data:
+                        dct={}
+                        dct["name"]=room["name"]
+                        dct["id"]=room["id"]
+                        lst.append(dct)
+                    resp["rooms_created"]=lst
+                else:
+                    resp["rooms_created"]=[]
+                
+                
+                
+                return Response(resp,status=status.HTTP_200_OK)
+                
             else:
-                resp["rooms_created"]=[]
-            
-            
-            
-            return Response(resp,status=status.HTTP_200_OK)
-            
-        else:
+                return Response({
+                    "errors":serializer.errors
+                },status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:  
+            logger.error(e)
             return Response({
-                "errors":serializer.errors
+                "Error":str(e) 
             },status=status.HTTP_400_BAD_REQUEST)
         
     def post(self,request):
@@ -89,56 +104,35 @@ class UserProfileApiview(APIView):
             "errors":serializer.errors
         },status=status.HTTP_400_BAD_REQUEST)
 
-    # def patch(self,request):
-    #     try:
-    #         data=request.data
-    #         user=User.objects.get(id=data["id"])
+    def patch(self,request,q):
+        try:
+            print(f"🚀🚀URL{request.data}")
+            profile=UserProfile.objects.get(user=request.user)
+            serializer=UserProfSerializer(context={'request':request},data=request.data,partial=True,instance=profile)
             
-    #         if not user:
-    #             return Response({
-    #                 "errors":"Invalid user"
-    #             },status=status.HTTP_400_BAD_REQUEST)
-
-    #         print(f"✅✅User=>{user}")
-
-    #         serializer=UserProfSerializer(instance=user,data=data,partial=True)
-    #         if serializer.is_valid():
-    #             serializer.save()
-    #             return Response({
-    #                 "userdata":serializer.data,
-    #                 "message":f"user updated"
-    #             },status=status.HTTP_200_OK)
             
-    #         return Response({
-    #             "errors":serializer.errors,
-    #             "message":f"error in user  updation"
-    #         },status=status.HTTP_400_BAD_REQUEST)
-    #     except Exception as e:
-    #         return Response({
-    #             "Error":str(e)
-    #         })
-    #
-    # def put(self,request):
-    #     data=request.data
-    #     user=User.objects.get(id=data["id"])
-    #     if user:
-    #         serializer=UserProfSerializer(instance=user,data=data,partial=False)
-    #         if serializer.is_valid():
-    #             serializer.save()
-    #             return Response({
-    #                 "userdata":serializer.data,
-    #                 "message":f"user: updated"
-    #             },status=status.HTTP_400_BAD_REQUEST)
+            profile_pic=""
+            if profile.profile_pic: 
+                profile_pic=f"{settings.SITE_BASE_URL}{profile.profile_pic.url}"
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    "profile_pic":profile_pic
+                },status=status.HTTP_200_OK)
+            else:
+                logger.error(serializer.errors)
+                return Response({
+                    "error":serializer.errors,
+                },status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            logger.error(e)
+            return Response({
+                "Error":str(e)
+            })
+    
 
-    #         return Response({
-    #             "errors":serializer.errors,
-    #             "message":f"error in user updation"
-    #         },status=status.HTTP_400_BAD_REQUEST)
-        
-    #     return Response({
-    #         "errors":"Invalid id,no such user",
-    #         "message":f"error in user  updation"
-    #     },status=status.HTTP_400_BAD_REQUEST)
     
     # def delete(self,request):
     #     user_id=request.data["id"]

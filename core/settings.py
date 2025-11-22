@@ -191,7 +191,7 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 5
 }
 
-SITE_BASE_URL = get_env_setting("SITE_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+SITE_BASE_URL = get_env_setting("SITE_BASE_URL")
 LLM_BASE_URL = get_env_setting("LLM_BASE_URL", "http://127.0.0.1:1239/v1/")
 LLM_MODEL_NAME = get_env_setting("LLM_MODEL_NAME", "hermes-3-llama-3.2-3b")
 LLM_API_KEY = get_env_setting("LLM_API_KEY", "lm_studio")
