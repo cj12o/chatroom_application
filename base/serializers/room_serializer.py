@@ -24,9 +24,13 @@ class RoomSerializerForPagination(serializers.ModelSerializer):
         fields='__all__'
 
     def get_parent_topic(self,obj):
-        return obj.parent_topic.topic
+        try:
+            return obj.parent_topic.topic
+        except Exception as e:
+            logger.error(e)
+
     
-    # def get_members(self,obj):
+    def get_members(self,obj):
         try:
             room=Room.objects.get(id=obj.id)
             members=room.members.all()
@@ -41,36 +45,53 @@ class RoomSerializerForPagination(serializers.ModelSerializer):
             # print(f"😀😀lst{lst}")
             return lst
         except User.DoesNotExist:
+            print(f"ERROR in getting members NOT exists")
             return []
         
     def get_isMember(self,obj)->bool:
-        username=self.context["username"]
-        if not username:return False
-        qs=obj.members.filter(Q(username=username))
-        if len(qs)>0:return True
-        return False
+        try:
+            username=self.context["username"]
+            if not username:return False
+            qs=obj.members.filter(Q(username=username))
+            if len(qs)>0:return True
+            return False
+        except Exception as e:
+            print(f"ERROR in getting isMember:{str(e)}")
+            return False
     
     def get_moderator(self,obj):
-        lst=[]
-        room=Room.objects.get(id=obj.id)
-        mods=room.moderator.all()
-        for mod in mods:
-            dct={}
-            dct["id"]=mod.id
-            dct["status"]=UserProfile.objects.get(id=mod.id).is_online
-            dct["username"]=mod.username
-            lst.append(dct)
-        return lst
+        try:
+            lst=[]
+            room=Room.objects.get(id=obj.id)
+            mods=room.moderator.all()
+            for mod in mods:
+                dct={}
+                dct["id"]=mod.id
+                dct["status"]=UserProfile.objects.get(id=mod.id).is_online
+                dct["username"]=mod.username
+                lst.append(dct)
+            return lst
+        except Exception as e:
+            print(f"ERROR in getting moderator:{str(e)}")
+            
     
     def get_author(self,obj):
-        dct={}
-        dct["id"]=obj.author.id
-        dct["name"]=obj.author.username
-        return dct
+        try:
+            dct={}
+            dct["id"]=obj.author.id
+            dct["name"]=obj.author.username
+            return dct
+        except Exception as e:
+            print(f"ERROR in getting author:{str(e)}")
+
     
     def get_tags(self,obj):
-        if len(obj.tags)<1:return []
-        return obj.tags["tags"]
+        try:
+            if len(obj.tags)<1:return []
+            print(f"obj.tags:{obj.tags}")
+            return obj.tags
+        except Exception as e:
+            print(f"ERROR in getting tags:{str(e)}")
     
 
 class RoomSerializer(serializers.ModelSerializer):
@@ -123,7 +144,7 @@ class RoomSerializer(serializers.ModelSerializer):
     
     def get_tags(self,obj):
         if len(obj.tags)<1:return []
-        return obj.tags["tags"]
+        return obj.tags
 
 
 
@@ -170,7 +191,7 @@ class RoomSerializerForCreation(serializers.ModelSerializer):
                     instance.topic=validated_data["topic"]
 
                 if "moderator" in validated_data:
-                    mods=User.objects.filter(username__in=validated_data["moderator"])
+                    mods=User.objects.filter(id__in=validated_data["moderator"])
                     instance.moderator.set(mods)
             
             instance.save()

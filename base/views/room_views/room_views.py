@@ -75,7 +75,7 @@ def listRooms(request):
             qs=Room.objects.distinct("parent_topic__topic").order_by("parent_topic__topic","-updated_at","-created_at")
         
         elif need==1:
-            "case when from search bar a prticular romm is selected"
+            "case when from search bar a particular room is selected"
             qs=Room.objects.filter(id=int(keyword))
         
         elif need==2:
@@ -93,7 +93,7 @@ def listRooms(request):
             Q(tags__icontains=keyword)).order_by("-updated_at","-created_at")
 
         result_page=paginator.paginate_queryset(qs, request)
-        
+
         serializer=RoomSerializerForPagination(result_page,context={"username":request.user.username},many=True)
         
         return paginator.get_paginated_response(serializer.data)
@@ -126,14 +126,14 @@ class RoomApiview(APIView):
         "method returns per room detail"
         try:
             if not request.GET.get('id'):
-                return Response({"message":"no id passed"},status=status.HTTP_400_BAD_REQUEST)
+                raise Exception("Invalid room id")
 
             param=request.GET.get('id')
             qs=Room.objects.filter(Q(id=param))
             serializer=RoomSerializer(qs,many=True)
             return Response(serializer.data,status=status.HTTP_200_OK)
         except Exception as e:
-            return Response({"message":f"Error in getting room {str(e)}"},status=status.HTTP_400_BAD_REQUEST)
+            return Response({"message":str(e)},status=status.HTTP_400_BAD_REQUEST)
 
    
     def patch(self,request):
@@ -142,21 +142,23 @@ class RoomApiview(APIView):
             for room owner  
             """
             data=request.data
-            room=Room.objects.get(Q(author__username=request.user.username)&Q(id=data["id"]))
+            room=Room.objects.get(id=data["id"])
+            if room.author.id!=request.user.id:
+                raise Exception("You are not authorized to update this room")   
+            
             serializer=RoomSerializerForCreation(data=data,instance=room,partial=True)
 
             if serializer.is_valid():
                 serializer.save()
                 return Response({
-                    "roomdata":serializer.data,
                     "message":"Room updated"
                 },status=status.HTTP_200_OK)
             
         except Exception as e:    
             logger.error(e)
+            print(f"Error in patch {str(e)}")
             return Response({
-                "error":str(e),
-                "message":"error in Room updation"
+                "message":str(e)
             },status=status.HTTP_400_BAD_REQUEST)
     
 
@@ -173,9 +175,11 @@ class RoomApiview(APIView):
             return Response({
                 "msg":"room done"
             },status=status.HTTP_200_OK)
+        
         except Exception as e:
             logger.error(e)
             return Response({
+                "error":str(e),
                 "msg":"room not created"
             },status=status.HTTP_400_BAD_REQUEST)
     

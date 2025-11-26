@@ -6,7 +6,7 @@ from django.conf import settings
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("api/",include('base.api.urls')),
-    path("api/room_edit/",include('base.api.room_edit_urls')),
+    path("api/room_stats/",include('base.api.room_stats_urls')),
 ]
 
 if settings.DEBUG==True:

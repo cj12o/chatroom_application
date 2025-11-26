@@ -14,6 +14,7 @@ class Room_memeber_stats_seriaizer(serializers.Serializer):
     msg_count=serializers.SerializerMethodField()
     vote_count=serializers.SerializerMethodField()
     username=serializers.SerializerMethodField()
+    id=serializers.SerializerMethodField()
 
     def get_msg_count(self,obj):
         try:    
@@ -34,4 +35,9 @@ class Room_memeber_stats_seriaizer(serializers.Serializer):
         except Exception as e:
             logger.error(e)
             
-
+    def get_id(self,obj):
+        try:
+            return obj.id
+        except Exception as e:
+            logger.error(e)
+            
