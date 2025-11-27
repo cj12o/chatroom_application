@@ -65,6 +65,7 @@ class RoomListPagination(PageNumberPagination):
 @authentication_classes([TokenAuthentication])
 def listRooms(request):
     try:
+        # print(f"✅✅User :{request.user.username} Auth status :{request.user.is_authenticated}")
         paginator=RoomListPagination()
         need=int(request.GET.get("need",-1)) #need=[parent topic filter:2,search bar specific :1,searchbar random]
         keyword=request.GET.get("keyword","")
@@ -94,7 +95,7 @@ def listRooms(request):
 
         result_page=paginator.paginate_queryset(qs, request)
 
-        serializer=RoomSerializerForPagination(result_page,context={"username":request.user.username},many=True)
+        serializer=RoomSerializerForPagination(result_page,context={"user_auth_status":request.user.is_authenticated,"username":request.user.username},many=True)
         
         return paginator.get_paginated_response(serializer.data)
        

@@ -9,7 +9,7 @@ class Room(models.Model):
     description=models.TextField()
 
     ###add
-    parent_topic=models.ForeignKey(Topic,on_delete=models.CASCADE)
+    parent_topic=models.ForeignKey(Topic,related_name="room_topic",on_delete=models.CASCADE)
 
     ####
     topic=models.CharField(max_length=100)

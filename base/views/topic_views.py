@@ -29,8 +29,6 @@ class TopicApiview(APIView):
         serializer=TopicSerializer(topics,many=True)
         
         if serializer:
-            # print(f"✅✅Serializer{serializer}")
-
             return Response({
                 "topics":serializer.data
             },status=status.HTTP_200_OK)
@@ -45,7 +43,6 @@ class TopicApiview(APIView):
         
         if serializer.is_valid():
             serializer.save()
-            # print(f"✅✅Serializer{serializer}")
             return Response({
                 "topics":serializer.data,
                 "message":"topic created"

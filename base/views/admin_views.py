@@ -8,13 +8,17 @@ from rest_framework.permissions import IsAuthenticated,IsAdminUser
 from rest_framework.decorators import api_view
 from django.conf import settings
 
-# token = Token.objects.create(user=...)
-# print(token.key)
 
 
 from ..models.userprofile_model import UserProfile,User
 from ..serializers.user_serializer import UserSerializer,AdminLoginSerializer,SignupSerializer
 from ..serializers.userprof_serializer import UserProfSerializer
+
+from ..views.logger import logger
+
+from ..threadPool import ThreadPoolManager
+from ..views.history_views import setHistory
+
 #for admin
 class LoginApiview(APIView):
     
@@ -47,18 +51,28 @@ class LogoutApiview(APIView):
     permission_classes=[IsAuthenticated]
     authentication_classes=[TokenAuthentication]
 
-    def get(self,request):
-        if request.user:
-            request.user.auth_token.delete()
+    def post(self,request):
+        try:
+            
+            if request.user.is_authenticated:
+                data=request.data
+                executor=ThreadPoolManager.get()
+                executor.submit(setHistory,data,request.user)
+
+                request.user.auth_token.delete()    
+                
+                return Response({
+                    "message":"logged out"
+                },status=status.HTTP_200_OK)
+
+
+            else: raise Exception("Invalid user")
+
+        except Exception as e:
+            print(f"Error in logout:{str(e)}")
             return Response({
-                "message":"logged out"
-            },status=status.HTTP_200_OK)
-        
-        return Response({
-            "message":"logout failed"
-        },status=status.HTTP_400_BAD_REQUEST)
-
-
+                "Error":str(e)
+            },status=status.HTTP_400_BAD_REQUEST)
 
 class SignUpApiview(APIView):
     def post(self,request):

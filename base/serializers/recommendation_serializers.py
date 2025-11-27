@@ -11,6 +11,7 @@ class RecommndationSerializer(serializers.Serializer):
     moderator=serializers.SerializerMethodField()
     name=serializers.SerializerMethodField()
     description=serializers.SerializerMethodField()
+    tags=serializers.SerializerMethodField()
     topic=serializers.SerializerMethodField()
     reason=serializers.CharField()
     is_private=serializers.SerializerMethodField()
@@ -76,4 +77,5 @@ class RecommndationSerializer(serializers.Serializer):
     def get_updated_at(self,obj):
         return obj.room.updated_at
         
-
+    def get_tags(self,obj):
+        return obj.room.tags

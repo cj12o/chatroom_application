@@ -50,9 +50,9 @@ class RoomSerializerForPagination(serializers.ModelSerializer):
         
     def get_isMember(self,obj)->bool:
         try:
-            username=self.context["username"]
-            if not username:return False
-            qs=obj.members.filter(Q(username=username))
+            user_auth_status=self.context["user_auth_status"]
+            if not user_auth_status: return False
+            qs=obj.members.filter(Q(username=self.context["username"]))
             if len(qs)>0:return True
             return False
         except Exception as e:

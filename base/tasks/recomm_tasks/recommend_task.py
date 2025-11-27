@@ -79,7 +79,7 @@ def getCosinSimRooms(user_history_dict:dict)->list:
                 query_doc=f"""
                     name:{room.name}
                     description:{room.description}
-                    tags:{room.tags["tags"]}
+                    tags:{room.tags}
                     topic:{room.topic}
                     parent_topic:{room.parent_topic.topic}
                 """ 
@@ -88,9 +88,13 @@ def getCosinSimRooms(user_history_dict:dict)->list:
                     query_texts=[query_doc], 
                     n_results= 6 if collection.count()>6 else collection.count()
                 )
+
+                print(f"coolection count:{collection.count()}")
+
                 # for result in results:
                 metadata=results["metadatas"][0]
                 documents=results["documents"][0]
+                
                 for i in range(0,len(metadata)):
                     # print(f"✏️room name:{metadata[i]["room name"]} id:{metadata[i]["room id"]} document:{documents[i]}")
                     dct={"id":int(metadata[i]["room_id"]),"name":metadata[i]["room_name"],"document":documents[i]}
