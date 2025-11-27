@@ -15,7 +15,7 @@ def get_token_user(token_given:str):
         userProf=UserProfile.objects.get(user__username=token.user.username)
         userProf.is_online=True
         userProf.save()
-        return token.user.username
+        return [token.user.username,token.user.id]
     except Exception as e:
         print(f"...Error in get_token_user_middleware_func:{e}")
 
@@ -35,9 +35,10 @@ class TokenAuthChannelMiddleware(BaseMiddleware):
             token=token[6:len(token)]
 
             print(f"👤👤Token:{token}")
-            username=await get_token_user(token)
-    
-            scope["username"]=username
+            user_data=await get_token_user(token)
+
+            scope["username"]=user_data[0]
+            scope["user_id"]=user_data[1]
             print(f"👤👤User:{scope["username"]}")
             return await super().__call__(scope,receive,send)
     

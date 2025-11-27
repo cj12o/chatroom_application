@@ -1,16 +1,25 @@
 from rest_framework import serializers
-from ..models.notification_model import Notification
+from ..models import Notification,PersonalNotification
 
-class NotificationSerializer(serializers.ModelSerializer):
+class PersonalNotificationSerializer(serializers.Serializer):
     notify=serializers.SerializerMethodField()
     room=serializers.SerializerMethodField()
-    
-    class Meta:
-        model=Notification
-        fields="__all__"
+    sent_status=serializers.BooleanField()
+    mark_read_status=serializers.BooleanField()
+    # class Meta:
+    #     model=Notification
+    #     fields="__all__"
     
     def get_notify(self,obj):
-        return obj.notify
+        return obj.notification.notify
     
     def get_room(self,obj):
-        return {"room_id":obj.room.id,"room_name":obj.room.name}
+        temp_room_obj=obj.notification.room
+        return {"room_id":temp_room_obj.id,"room_name":temp_room_obj.name}
+    
+    def get_sent_status(self,obj):
+        return obj.sent_status
+    
+    def get_mark_read_status(self,obj):
+        return obj.mark_read
+    

@@ -7,27 +7,24 @@ from rest_framework import status
 from django.db.models import Q
 from rest_framework.decorators import api_view
 
-from ..serializers.notification_serializer import NotificationSerializer
+from ..serializers.notification_serializer import PersonalNotificationSerializer
 
 class NotificationView(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = [TokenAuthentication]
-    def get(self, request):
-        try:
-            user = request.user
-            member_in_rooms=user.room_member.all()
 
-            lst=[]
-            for rm in member_in_rooms:
+    def get(self, request):
+        """gives notification for user """
+        try:
+            request.user.personalnotification_user.all()
+
+            # serializer=PersonalNotificationSerializer(rm.notification_set.filter(sent_status=False),many=True)
                 
-                # print(f"{len(rm.notification_set.all())}")
-                serializer=NotificationSerializer(rm.notification_set.all(),many=True)
-                
-                if serializer:
-                    lst.append(serializer.data)
+            #     if len(serializer.data)>0:
+            #         lst.append(serializer.data)
                     
             return Response({
-                "notifications":lst
+                "notifications":""
             },status=status.HTTP_200_OK)
         
         except Exception as e:

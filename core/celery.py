@@ -23,15 +23,6 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks(packages=['base.tasks.recomm_tasks'])
 
 
-# from base.tasks import main,savePolltoDb,start_agent
-
-# app.conf.beat_schedule = {
-#     'run-helper-every-2-seconds': {
-#         'task': 'base.tasks.agent_task.start_agent',
-#         'schedule': 2.0,   # runs every 2 seconds
-#     },
-# }
-
 
 from dotenv import load_dotenv
 
@@ -93,61 +84,21 @@ def add_summerize_task(json_msg:dict):
         print(f"Error in add_summerize_task:{str(e)}")
 
 
-
-# @shared_task
-# def moderate(json_chats:dict):
-    
-    
-#     for k,v in json_chats.items():
-
-async def sendNotificationToWs(json:dict):
-    channel_layer=layers.get_channel_layer()
-
-    notify_msg=json["notify"]
-    notification_id=json["id"]
-    room_id=json["room_id"]
-    
-    await channel_layer.group_send(
-        "Notification_channel",
-        {
-            "type":"sendNotification",
-            "task":"notification",
-            "notify":notify_msg,
-            "notification_id":notification_id,
-            "room_id":room_id
-        }
-    )
-
-
-
-# @shared_task
-# def sendNotificationToWs(json:dict):
-    
-#     #TODO:add verification
-
-#     asyncio.run(helper(json))
-
-
 @shared_task(autoretry_for=(), max_retries=0)
 def createNotification(json:dict):
-    from base.models.notification_model import Notification
-    from base.models.room_model import Room
-    from base.models.message_model import Message
+    from base.models import Notification,Message,Room,PersonalNotification
+    
     try:
         with transaction.atomic():
             room=Room.objects.get(id=json["room_id"])
             message=Message.objects.get(id=json["message_id"])
             notification=Notification.objects.create(room=room,message=message,notify=json["notify"])
-
+            notification.populatePersonalNotification()
         json2={
             "notify":json["notify"],
             "id":notification.id,
             "room_id":notification.room.id
         }
-        if not notification.sent_status:
-            asyncio.run(sendNotificationToWs(json2))
-            Notification.objects.get(id=json2["id"]).update(sent_status=True)
-            
 
     #integerity error ,due to race condition
     except Exception as e:
