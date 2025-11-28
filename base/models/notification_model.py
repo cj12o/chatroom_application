@@ -95,11 +95,8 @@ class PersonalNotification(models.Model):
 @receiver(sender=Message,signal=signals.post_save)
 def task_create_notification(sender,instance,created,**kwargs):
     if not created:return
-    msg=f"""
-        Activity in Room : {instance.room.name}
-            {instance.author.username}: Posted {instance.message}
-        """
-    
+    msg=f"Activity:{instance.author.username}: Posted {instance.message}"
+        
     dct={
         "room_id":instance.room.id,
         "message_id":instance.id,

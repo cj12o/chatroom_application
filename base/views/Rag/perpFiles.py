@@ -1,4 +1,4 @@
-from ...models.file_log_model import ChatFileLog
+from ...models import ChatFileLog,Message
 import os
 from django.conf import settings
 from django.db.models import Q
@@ -22,6 +22,7 @@ def get_file(room_id)->str:
 
 
 def get_json_for_celery(q_msg:Queue,q_msg_id:Queue)->dict:
+    "return {msg_id:msg}"
     jsn_msg={}
     
     for idx in range(0,q_msg_id.qsize()):

@@ -5,8 +5,11 @@ from .message_model import Message
 from django.db.models  import signals,Q
 from django.dispatch import receiver
 from queue import Queue
-
+import os
+from django.conf import settings
+base_dir=settings.BASE_DIR
 from core.celery import add_summerize_task
+from  ..views.Rag.perpFiles import get_json_for_celery
 
 q=Queue()
 msg_id_q=Queue() #queue containe message id
@@ -15,9 +18,7 @@ k denotes batch size
 """
 k=20
 
-import os
-from django.conf import settings
-base_dir=settings.BASE_DIR
+
 
 class ChatFileLog(models.Model):
     room=models.OneToOneField(to=Room,on_delete=models.CASCADE)
@@ -33,20 +34,19 @@ class MessageSummerizedStatus(models.Model):
 
     @classmethod
     def get_list_unsummerized(cls):
-    
-
         from ..views.Rag.perpFiles import get_json_for_celery
-
         qs=cls.objects.filter(Q(status=False)).values()[:10]
         return [q.message for q in qs]
+
+
 
 @receiver(signals.post_save, sender=Message)
 def signal_receiver(sender,instance,created,**kwargs):
     
-    from  ..views.Rag.perpFiles import get_json_for_celery
+    
     # from ..task import add_summerize_task
     global q,msg_id_q
-    
+
 
     if created and not instance.is_moderated:
         msg_new_obj=MessageSummerizedStatus.objects.create(message=instance)

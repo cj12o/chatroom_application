@@ -1,15 +1,13 @@
 from celery import shared_task
-
-
 from langchain_openai import ChatOpenAI
 from langchain.tools import tool
 from typing import TypedDict,Annotated,Literal
 from langchain.messages import AnyMessage,SystemMessage,ToolMessage,HumanMessage
 import operator
-from langgraph.graph import StateGraph, MessagesState, START, END
+from langgraph.graph import StateGraph, START, END#,MessagesState
 import json
-from datetime import datetime,date
-import asyncio
+from datetime import datetime
+from asgiref.sync import async_to_sync
 
 from channels.layers import get_channel_layer
 from django.conf import settings
@@ -44,7 +42,7 @@ def pollGenerator():
     Args:
         state: agent's state
     """
-    print(f"---------------POLL GEN CALLED---------------------------")
+    print("---------------POLL GEN CALLED---------------------------")
     SYSTEM_PROMPT=f""" 
     You are an expert poll generator generate a poll based on given room details:
     Chat Room Name:{context["room_name"]}
@@ -75,7 +73,7 @@ def threadGenerator():
     Args:
         state: agent's state
     """
-    print(f"---------------THREADGEN GEN CALLED---------------------------")
+    print("---------------THREADGEN GEN CALLED---------------------------")
     SYSTEM_PROMPT=f""" 
     You are an expert in the room's topic  ,generate an interesting thread/comment based on given room details:
         Chat Room Name:{context["room_name"]}
@@ -145,7 +143,7 @@ def tool_node(state:dict):
     tool gets called.
     """
 
-    print(f"Tool node called")
+    print("Tool node called")
     outputs=[]
     for message in state["messages"][-1].tool_calls:
         tool_name=message["name"]
@@ -162,7 +160,7 @@ def tool_node(state:dict):
 
 
 
-def re_run(state: dict) -> Literal["tool_node", END]:
+def re_run(state: dict) -> Literal["tool_node",END]:
     """
     Decides whether to call a tool next or end the execution.
     """
@@ -173,7 +171,6 @@ def re_run(state: dict) -> Literal["tool_node", END]:
 
 @shared_task
 def main(room_id:int,room_name:str,room_description:str)->dict:
-    
 
     graph=StateGraph(MessagesState)
 
@@ -197,13 +194,12 @@ def main(room_id:int,room_name:str,room_description:str)->dict:
     for x in result["messages"]:
         if hasattr(x,"content"):
             if len(x.content)>0 and hasattr(x,"tool_call_id"):
-                # print("="*60)
-                # print(x.content)
-                # print("="*60)
+
                 if poll_gen_called_flag:
                     sol["content"]=json.loads(x.content)
                     
-                else: sol["content"]=x.content
+                else: 
+                    sol["content"]=x.content
                 
                 
             if hasattr(x,"tool_calls"):
@@ -226,12 +222,13 @@ def savePolltoDb(room_id:int,username:str,message:dict,parent:int=None):
     try:
         from base.models import Room,Message,Poll
         from django.contrib.auth.models import User 
+        from base.views.logger import logger 
     
         room=Room.objects.get(id=room_id)
         author=User.objects.get(username=username)
         
         msg=Message.objects.create(room=room,author=author,message="")
-        if parent!=None:
+        if parent is not None:
             parent_msg=Message.objects.get(id=parent)
             msg.parent=parent_msg
 
@@ -241,18 +238,17 @@ def savePolltoDb(room_id:int,username:str,message:dict,parent:int=None):
         room=Room.objects.get(id=room_id)
 
         new_poll=Poll.objects.create(message=msg,author=author,room=room,question=message["question"],choices={"choices":message["options"]})
-        # new_poll.question=message["question"]
-        # new_poll.choices={"choices":message["choices"]}
-        new_poll.save()
+        
         return (msg.id,new_poll.id)
     except Exception as e:
-        print(f"❌❌🪨🪨POLL NOT SAVED,error:{str(e)}")
+        logger.error(f"POLL NOT SAVED,error:{str(e)}")
 
 @shared_task
 def saveThreadToDb(room_id:int,username:str,message:str)->int:
     try:
         from base.models import Message,Room
         from django.contrib.auth.models import User
+        from base.views.logger import logger 
 
         room=Room.objects.get(id=room_id)
         author=User.objects.get(username=username)
@@ -262,14 +258,14 @@ def saveThreadToDb(room_id:int,username:str,message:str)->int:
         msg.save()
         return msg.id
     except Exception as e:
-        print(f"❌❌🪨🪨THREAD NOT SAVED,error:{str(e)}")
+        logger.fatal(f"THREAD NOT SAVED,error:{str(e)}")
 
 @shared_task
 async def connectToWs(tool_called:str,message:str,message_id:int,room_id:int,parent=None):
     try:
+        from base.views.logger import logger
 
         channel_layer=get_channel_layer()
-        print(f"👤👤✏️✏️✏️CALLED CONNECT TO ES FOR AGENT")
         await channel_layer.group_send(
             f"room_{str(room_id)}",
             {
@@ -284,7 +280,7 @@ async def connectToWs(tool_called:str,message:str,message_id:int,room_id:int,par
             }
         )
     except Exception  as e:
-        print(f"❌❌ERROR in connect to ws AGENT :{str(e)}")
+        logger.error(f"❌❌ERROR in connecting to ws(AGENT) :{str(e)}")
 
 
 @shared_task
@@ -293,7 +289,7 @@ def start_agent():
         from base.models import Room,Message
         from django.db.models import Q
         from django.utils.dateparse import parse_datetime
-
+        from base.views.logger import logger
 
         """
         1)call main to get result
@@ -325,29 +321,14 @@ def start_agent():
                 agent_msg=main(room_id=r.id,room_name=r.name,room_description=r.description)
                 
             
-            if agent_msg!=None and "tool_called" in agent_msg:  
+            if agent_msg is not None and "tool_called" in agent_msg:  
                 if agent_msg["tool_called"]=="pollGenerator":
                     savePolltoDb.delay(room_id=agent_msg["room_id"],username="Agent",message=agent_msg["content"])
 
                 else: 
                     message_id=saveThreadToDb(room_id=agent_msg["room_id"],username="Agent",message=agent_msg["content"])
-                    asyncio.run(connectToWs(tool_called="threadGenerator",message=agent_msg["content"],message_id=message_id,room_id=r.id))
-            # await channel_layer.group_send(
-            #     f"room_{agent_msg["room_id"]}",
-            #     {
-            #         "type":"chat_message",
-            #         "tool_called":agent_msg["tool_called"],
-            #         "task":"AgentActivity",
-            #         # "message":agent_msg["message"],
-            #         "question":agent_msg["message"]["question"],
-            #         "choices":agent_msg["message"]["options"],
-            #         "parent":None,
-            #         "username":"Agent",
-            #         "message_id":message_id,
-            #         "room_id":agent_msg["room_id"],
-            #         "poll_id":poll_id
-            #         # "status": True
-            #     }
-            # )
+                    # asyncio.run(connectToWs(tool_called="threadGenerator",message=agent_msg["content"],message_id=message_id,room_id=r.id))
+                    async_to_sync(connectToWs)(tool_called="threadGenerator",message=agent_msg["content"],message_id=message_id,room_id=r.id)
+    
     except Exception as e:
-        print(f"ERROR in starting agent: {str(e)}")
+        logger.fatal(f"ERROR in starting agent: {str(e)}")

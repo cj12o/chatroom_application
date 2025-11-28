@@ -4,7 +4,7 @@ from django.dispatch import receiver
 from django.db.models import Q,signals
 from django.db import transaction
 import time
-
+from ..views.logger import logger
 class VectorDbAdditionStatus(models.Model):
     room=models.ForeignKey(to=Room,related_name="room_vectordb_add_status",on_delete=models.CASCADE)
     status=models.BooleanField(default=False)
@@ -14,7 +14,8 @@ class VectorDbAdditionStatus(models.Model):
 
 @receiver(sender=Room,signal=signals.post_save)
 def addToVectorDb(sender,instance,created,**kwargs):
-    if not created: return
-    with transaction.atomic():
-        room=VectorDbAdditionStatus.objects.create(room=instance)
-    
+    try:
+        if not created: return
+        VectorDbAdditionStatus.objects.create(room=instance)
+    except Exception as e:
+        logger.error(e)

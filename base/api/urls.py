@@ -75,6 +75,7 @@ urlpatterns=[
     #test polls in room
     path("polls/<int:pk>/",pollv.Pollview.as_view()),
     path("notify/",nv.NotificationView.as_view()),
+    path("notify/count/",nv.getUnsendNotificationCnt),
 
     path("notification_tester/",t.TestView.as_view()),
 

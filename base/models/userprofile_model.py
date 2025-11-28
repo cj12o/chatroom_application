@@ -14,8 +14,6 @@ upload_to='avatars/' → uploaded images are saved under:
 MEDIA_ROOT/avatars/"""
 
 class UserProfile(models.Model):
-    # username
-    # email
     user=models.OneToOneField(to=User,on_delete=models.CASCADE,related_name="profile",null=True)
     bio=models.TextField(null=True,blank=True)
     last_seen=models.DateTimeField(default=timezone.now)
