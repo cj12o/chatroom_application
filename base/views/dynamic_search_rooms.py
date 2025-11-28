@@ -7,7 +7,7 @@ from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import api_view
-from ..views.logger import logger
+from ..logger import logger
 from django.db.models import Count,When,Case,Value
 
     

@@ -5,7 +5,7 @@ from django.db.models.signals import post_delete,post_save
 from django.dispatch import receiver
 from channels.layers import get_channel_layer
 import asyncio
-from ..views.logger import logger
+from ..logger import logger
 from redis import Redis
 from base.tasks import start_moderation
 

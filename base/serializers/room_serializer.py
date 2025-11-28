@@ -7,7 +7,7 @@ from ..models.userprofile_model import UserProfile
 
 from.user_serializer import UserSerializer
 from ..views.topic_filter import topicsList
-from ..views.logger import logger
+from ..logger import logger
 import json
 from ..views.topic_filter import topicsList
 
@@ -51,9 +51,14 @@ class RoomSerializerForPagination(serializers.ModelSerializer):
     def get_isMember(self,obj)->bool:
         try:
             user_auth_status=self.context["user_auth_status"]
-            if not user_auth_status: return False
+            if not user_auth_status:
+                print(f"✅✅user not authed ->False")
+                return False
             qs=obj.members.filter(Q(username=self.context["username"]))
-            if len(qs)>0:return True
+            if len(qs)>0:
+                print(f"✅✅isMember->True")
+                return True
+            print(f"✅✅isMember->False")
             return False
         except Exception as e:
             print(f"ERROR in getting isMember:{str(e)}")
@@ -159,24 +164,28 @@ class RoomSerializerForCreation(serializers.ModelSerializer):
         fields = ['name', 'description', 'topic', 'is_private', 'moderator','tags']
 
     def create(self, validated_data):
-        moderators = validated_data.pop("moderator", [])
-        user = self.context["request"].user
+        try:
+            moderators = validated_data.pop("moderator", [])
+            user = self.context["request"].user
 
-        main_topic = topicsList(validated_data["topic"])
-        parent_topic = Topic.objects.get(topic=main_topic)
+            main_topic = topicsList(validated_data["topic"])
+            parent_topic = Topic.objects.get(topic=main_topic)
 
-        room = Room.objects.create(
-            author=user,
-            **validated_data,
-            parent_topic=parent_topic,
-        )
+            room = Room.objects.create(
+                author=user,
+                **validated_data,
+                parent_topic=parent_topic,
+            )
 
-        # Add moderators
-        users = User.objects.filter(username__in=moderators)
-        room.moderator.set(users)
+            # Add moderators
+            users = User.objects.filter(username__in=moderators)
+            room.moderator.set(users)
 
-        return room
+            return room
 
+        except Exception as e:
+            print("ERROR in creating room")
+            logger.error(e)
 
     def update(self, instance, validated_data):
         try:

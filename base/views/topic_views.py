@@ -6,7 +6,7 @@ from rest_framework.authentication import TokenAuthentication
 from django.db.models import Q
 from rest_framework.views import APIView
 
-from ..models.topic_model import Topic
+from ..models import Topic
 from  ..serializers.topic_serializer import TopicSerializer
 
 from ..views.topic_filter import topicsList

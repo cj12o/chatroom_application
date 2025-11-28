@@ -10,7 +10,7 @@ def HistList(username:str,x:int,k:int)->dict:
     """
     try:
         from base.models import History
-        from base.views.logger import logger
+        from base.logger import logger
 
         """
         hist:{

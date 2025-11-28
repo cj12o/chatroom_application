@@ -66,7 +66,7 @@ class saveRecommendation(APIView):
         purpose= returns recommendation to homepage
         """
         qs=Recommend.objects.filter(Q(user__username=request.user.username))
-        serializer=RecommndationSerializer(qs,many=True)
+        serializer=RecommndationSerializer(qs,context={"user_auth_status":request.user.is_authenticated,"username":request.user.username if request.user.is_authenticated else ""},many=True)
         if serializer.data:
             return Response({
                 "rooms":serializer.data

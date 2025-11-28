@@ -222,7 +222,7 @@ def savePolltoDb(room_id:int,username:str,message:dict,parent:int=None):
     try:
         from base.models import Room,Message,Poll
         from django.contrib.auth.models import User 
-        from base.views.logger import logger 
+        from base.logger import logger 
     
         room=Room.objects.get(id=room_id)
         author=User.objects.get(username=username)
@@ -248,7 +248,7 @@ def saveThreadToDb(room_id:int,username:str,message:str)->int:
     try:
         from base.models import Message,Room
         from django.contrib.auth.models import User
-        from base.views.logger import logger 
+        from base.logger import logger 
 
         room=Room.objects.get(id=room_id)
         author=User.objects.get(username=username)
@@ -263,7 +263,7 @@ def saveThreadToDb(room_id:int,username:str,message:str)->int:
 @shared_task
 async def connectToWs(tool_called:str,message:str,message_id:int,room_id:int,parent=None):
     try:
-        from base.views.logger import logger
+        from base.logger import logger
 
         channel_layer=get_channel_layer()
         await channel_layer.group_send(
@@ -289,7 +289,7 @@ def start_agent():
         from base.models import Room,Message
         from django.db.models import Q
         from django.utils.dateparse import parse_datetime
-        from base.views.logger import logger
+        from base.logger import logger
 
         """
         1)call main to get result

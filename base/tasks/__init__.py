@@ -4,3 +4,4 @@ from .recomm_tasks.chroma_task import populate
 from.recomm_tasks.llm_task import orchestrator
 from .recomm_tasks.llm_task import insertRecommInDB
 from .moderation_task.moderator_flow import start_moderation
+from .summerization_tasks import add_summerize_task

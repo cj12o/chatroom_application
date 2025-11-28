@@ -10,7 +10,7 @@ from ..serializers.userprof_serializer import UserProfSerializer,RoomsCreatedSer
 from ..serializers.room_serializer import RoomSerializer
 from ..models.userprofile_model import UserProfile
 from ..models.room_model import Room
-from ..views.logger import logger
+from ..logger import logger
 from django.conf import settings
 
 class UserProfileApiview(APIView):

@@ -3,7 +3,7 @@ from ..models.userprofile_model import UserProfile
 from ..models.room_model import Room
 from ..models.message_model import Message,User
 from django.conf import settings
-from ..views.logger import logger
+from ..logger import logger
 
 # class UserProfSerializer(serializers.ModelSerializer):
 #     profile_pic=serializers.SerializerMethodField()

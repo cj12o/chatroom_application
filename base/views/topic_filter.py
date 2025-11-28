@@ -1,6 +1,6 @@
 
 from ..models.topic_model import Topic
-from .logger import logger
+from ..logger import logger
 from sentence_transformers import SentenceTransformer,util
 
 

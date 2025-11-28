@@ -10,7 +10,7 @@ from django.db.models import Q,signals
 import asyncio
 from django.utils.timezone import now
 from datetime import timedelta
-from ..views.logger import logger
+from ..logger import logger
 from base.tasks.notification_task import SendNotification
 """FLOW OF NOTIFICATION
 signal postsave Message-->celery Tak(createNotification)->asyncio (send to ws) -->update sent_status->consumer valides user 

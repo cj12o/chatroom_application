@@ -8,7 +8,7 @@ import asyncio
 from asgiref.sync import async_to_sync
 
 async def connectToWs(*args)->None:
-    from base.views.logger import logger
+    from base.logger import logger
     from channels.layers import get_channel_layer
     try:
         "modded message "
@@ -32,7 +32,7 @@ async def connectToWs(*args)->None:
 
 """setuped to run every k minutes"""
 def moderate(corpus:list[tuple[int,str]])->list[int]:
-    from base.views.logger import logger
+    from base.logger import logger
     from base.tasks.moderation_task.load_model import VECTORIZER,MODEL
     
     """model prediction gets returned"""
@@ -105,7 +105,7 @@ def moderate(corpus:list[tuple[int,str]])->list[int]:
 @shared_task
 def start_moderation():
     from base.models import Message
-    from base.views.logger import logger
+    from base.logger import logger
     try:
         
         qs = (

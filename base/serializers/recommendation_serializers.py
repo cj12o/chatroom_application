@@ -2,6 +2,8 @@ from rest_framework import serializers
 from ..models.recommendation_model import Recommend
 from ..models.room_model import Room
 from ..models.userprofile_model import UserProfile
+from django.db.models import Q
+from  ..logger import logger
 
 class RecommndationSerializer(serializers.Serializer):
     id=serializers.SerializerMethodField()
@@ -17,6 +19,7 @@ class RecommndationSerializer(serializers.Serializer):
     is_private=serializers.SerializerMethodField()
     created_at=serializers.SerializerMethodField()
     updated_at=serializers.SerializerMethodField()
+    isMember=serializers.SerializerMethodField()
     
     class Meta:
         model=Recommend
@@ -79,3 +82,16 @@ class RecommndationSerializer(serializers.Serializer):
         
     def get_tags(self,obj):
         return obj.room.tags
+    
+    def get_isMember(self,obj):
+        try:
+            user_auth_status=self.context.get("user_auth_status", False)
+            if not user_auth_status: return False
+            username=self.context.get("username", "")
+            qs=obj.room.members.filter(Q(username=username))
+            if len(qs)>0:return True
+            return False
+        except Exception as e:
+            logger.error(f"ERROR in getting isMember:{str(e)}")
+            return False
+

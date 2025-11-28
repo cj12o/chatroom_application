@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
-from .views.logger import logger
+from .logger import logger
 import atexit
 
 class ThreadPoolManager:

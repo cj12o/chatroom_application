@@ -4,7 +4,7 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework.response import Response
 from rest_framework import status
 from ...models import Room
-from ..logger import logger
+from ...logger import logger
 from django.db.models import Count,When,Case,Value,QuerySet,Q
 from rest_framework.pagination import PageNumberPagination
 from ...serializers.room_stat_serializer import Room_memeber_stats_seriaizer

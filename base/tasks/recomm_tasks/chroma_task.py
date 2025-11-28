@@ -9,7 +9,7 @@ def dbOp():
     "returns rooms that are not populated in vector db and makes their populates status True"
     try:
         from base.models import VectorDbAdditionStatus
-        from base.views.logger import logger
+        from base.logger import logger
         vecdbstat=VectorDbAdditionStatus.objects.filter(Q(status=False))
         for v in vecdbstat:
             v.status=True
@@ -29,7 +29,7 @@ def populate():
     3)log the status
     """
     try:
-        from base.views.logger import logger
+        from core.base.logger import logger
         
         chroma_client = chromadb.HttpClient(
             host=settings.CHROMA_HOST,

@@ -49,7 +49,7 @@ def Recommend(room_list:list,user_history:list):
     """takes in user history,room_list prompts to llm and returns list of recommended rooms"""
     
     try:
-        from base.views.logger import logger
+        from base.logger import logger
 
         room_str="\n".join(f"room_description: \n {dct['document']}" for dct in room_list)
         user_hist_str="\n".join(f"room_id:{dct["id"]} room_name:{dct["name"]} room_description:{dct["description"]}" for dct in user_history)
@@ -77,7 +77,7 @@ def Recommend(room_list:list,user_history:list):
 def insertRecommInDB(recom_dct:dict,username:str):
     from base.models import Recommend,Room
     from django.contrib.auth.models import User
-    from base.views.logger import logger
+    from base.logger import logger
 
     user=User.objects.get(username=username)
     try:
@@ -99,7 +99,7 @@ def orchestrator(username:str,sessioncount:int,per_session_hist_count:int):
     from .recommend_task import HistList,getCosinSimRooms
     from base.models import Room
     from .llm_task import insertRecommInDB
-    from base.views.logger import logger
+    from base.logger import logger
     try:
         user_history_dict=HistList(username=username,x=sessioncount,k=per_session_hist_count)
        

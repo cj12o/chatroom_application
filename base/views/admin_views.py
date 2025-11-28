@@ -14,7 +14,7 @@ from ..models.userprofile_model import UserProfile,User
 from ..serializers.user_serializer import UserSerializer,AdminLoginSerializer,SignupSerializer
 from ..serializers.userprof_serializer import UserProfSerializer
 
-from ..views.logger import logger
+from ..logger import logger
 
 from ..threadPool import ThreadPoolManager
 from ..views.history_views import setHistory

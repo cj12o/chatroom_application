@@ -6,7 +6,7 @@ from base.models import Message
 
 from django.conf import settings
 
-from base.views.logger import logger
+from ..logger import logger
 
 """setuped to run every k minutes"""
 def moderate(corpus:list[tuple[int,str]])->list[int]:

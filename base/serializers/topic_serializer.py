@@ -1,10 +1,11 @@
 from rest_framework import serializers
 from ..models.topic_model import Topic
-from ..views.logger import logger
+from ..logger import logger
 
 class TopicSerializer(serializers.ModelSerializer):
     
     relatedRooms=serializers.SerializerMethodField()
+    
     class Meta:
         model=Topic
         fields='__all__'

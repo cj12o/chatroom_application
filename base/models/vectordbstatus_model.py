@@ -4,7 +4,7 @@ from django.dispatch import receiver
 from django.db.models import Q,signals
 from django.db import transaction
 import time
-from ..views.logger import logger
+from ..logger import logger
 class VectorDbAdditionStatus(models.Model):
     room=models.ForeignKey(to=Room,related_name="room_vectordb_add_status",on_delete=models.CASCADE)
     status=models.BooleanField(default=False)

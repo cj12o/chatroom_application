@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..views.logger import logger
+from ..logger import logger
 
 class Room_memeber_stats_seriaizer(serializers.Serializer):
     """serilaizes

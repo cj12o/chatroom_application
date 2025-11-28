@@ -3,7 +3,7 @@ from ..models.room_model import Room
 from django.contrib.auth.models import User
 from django.db.models import Q
 from asgiref.sync import sync_to_async
-from ..views.logger import logger
+from ..logger import logger
 
 
 

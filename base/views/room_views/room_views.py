@@ -11,7 +11,7 @@ from django.contrib.auth.models import User
 from base.models import Room,UserProfile,Topic
 from ...serializers.room_serializer import RoomSerializer,RoomSerializerForPagination,RoomSerializerForCreation
 
-from ..logger import logger
+from ...logger import logger
 from ..topic_filter import topicsList
 # from .userRecommendation.chroma import getRecommendation
 
@@ -64,8 +64,9 @@ class RoomListPagination(PageNumberPagination):
 @api_view(['POST'])
 @authentication_classes([TokenAuthentication])
 def listRooms(request):
+    "return paginated rooms list"
     try:
-        # print(f"✅✅User :{request.user.username} Auth status :{request.user.is_authenticated}")
+    
         paginator=RoomListPagination()
         need=int(request.GET.get("need",-1)) #need=[parent topic filter:2,search bar specific :1,searchbar random]
         keyword=request.GET.get("keyword","")
@@ -73,8 +74,8 @@ def listRooms(request):
         qs=None
         if need==-1:
             "case of all rooms"
-            qs=Room.objects.distinct("parent_topic__topic").order_by("parent_topic__topic","-updated_at","-created_at")
-        
+            qs=Room.objects.order_by("-updated_at","-created_at")
+            
         elif need==1:
             "case when from search bar a particular room is selected"
             qs=Room.objects.filter(id=int(keyword))

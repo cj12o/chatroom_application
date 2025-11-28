@@ -3,11 +3,14 @@ import os
 from django.conf import settings
 from django.db.models import Q
 from datetime import datetime,date
+from ...logger import logger
+
+
 base_dir=settings.BASE_DIR
 
-from queue import Queue
 
 def get_file(room_id)->str:  
+    try:
         """
         method return file path
         """
@@ -18,18 +21,9 @@ def get_file(room_id)->str:
         chat_file_path=fileobj.fileLocation
 
         return chat_file_path
+    except Exception as e:
+        logger.error(f"Error in get_file: {e}")
         
-
-
-def get_json_for_celery(q_msg:Queue,q_msg_id:Queue)->dict:
-    "return {msg_id:msg}"
-    jsn_msg={}
-    
-    for idx in range(0,q_msg_id.qsize()):
-        jsn_msg[str(q_msg_id.get())]=q_msg.get()
-
-    return jsn_msg
-
 
 
     

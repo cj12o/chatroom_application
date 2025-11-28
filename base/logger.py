@@ -1,7 +1,8 @@
-# logging_config.py
 import logging
 import logging.config
 import os
+
+logging.raiseExceptions = True   # Debug mode for logging errors
 
 os.makedirs("logs", exist_ok=True)
 
@@ -10,7 +11,8 @@ logging_config = {
     "disable_existing_loggers": False,
     "formatters": {
         "simple": {
-            "format": "%(asctime)s - %(name)s - %(levelname)s: %(message)s"
+            "format": "%(asctime)s - %(name)s - %(levelname)s - "
+                      "%(filename)s:%(lineno)d: %(message)s"
         },
     },
     "handlers": {
@@ -21,7 +23,7 @@ logging_config = {
             "stream": "ext://sys.stderr",
         },
         "file": {
-            "class": "logging.handlers.RotatingFileHandler",
+            "class": "concurrent_log_handler.ConcurrentRotatingFileHandler",
             "level": "DEBUG",
             "formatter": "simple",
             "filename": "logs/base.log",
@@ -42,7 +44,5 @@ logging_config = {
     },
 }
 
-
 logging.config.dictConfig(logging_config)
-
 logger = logging.getLogger("base")

@@ -4,7 +4,7 @@ from asgiref.sync import async_to_sync
 
 async def sendNotificationToWs(json:dict):
     "sends notification to web socket "
-    from base.views.logger import logger
+    from base.logger import logger
     try:
         to_send={
             "type":"sendNotification",

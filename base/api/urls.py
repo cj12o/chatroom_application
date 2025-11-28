@@ -21,7 +21,7 @@ from ..views import poll_views as pollv
 from ..views import notification_views as nv
 from ..views import recommendation_views as rev
 from ..views import dynamic_search_rooms as dv
-
+from ..views import stats_views as st_v
 
 from ..views import test as t
 
@@ -83,7 +83,9 @@ urlpatterns=[
     path("add_member/<int:pk>/",mem_v.MemeberApiView.as_view()),
 
     #add sugestions
-    path("dynamic_suggestions/",dv.giveSuggestions)
+    path("dynamic_suggestions/",dv.giveSuggestions),
+
+    path("stats/",st_v.getStats),
 ]
 
 
