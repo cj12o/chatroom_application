@@ -13,8 +13,12 @@ class Room(models.Model):
     created_at=models.DateTimeField(auto_now_add=True)
     updated_at=models.DateTimeField(auto_now=True)
     tags=models.JSONField(default=dict)
-    moderator=models.ManyToManyField(to=User,related_name="room_moderator")
+    moderator=models.ManyToManyField(to=User,related_name="room_moderator",default=None)
     
+    def __str__(self) -> str:
+        return self.name
+
+
 
 
 

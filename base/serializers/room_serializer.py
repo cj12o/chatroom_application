@@ -1,9 +1,8 @@
 from rest_framework import serializers
-from ..models.room_model import Room
-from ..models.topic_model import Topic
 from django.db.models import Q
+from django.db import transaction
 from django.contrib.auth.models import User
-from ..models.userprofile_model import UserProfile
+from ..models import UserProfile,RoomModerationType,Room,Topic
 
 from.user_serializer import UserSerializer
 from ..views.topic_filter import topicsList
@@ -18,7 +17,7 @@ class RoomSerializerForPagination(serializers.ModelSerializer):
     isMember=serializers.SerializerMethodField()
     moderator=serializers.SerializerMethodField()
     tags=serializers.SerializerMethodField()
-
+    moderation_type=serializers.SerializerMethodField()
     class Meta:
         model=Room
         fields='__all__'
@@ -52,16 +51,13 @@ class RoomSerializerForPagination(serializers.ModelSerializer):
         try:
             user_auth_status=self.context["user_auth_status"]
             if not user_auth_status:
-                print(f"✅✅user not authed ->False")
                 return False
             qs=obj.members.filter(Q(username=self.context["username"]))
             if len(qs)>0:
-                print(f"✅✅isMember->True")
                 return True
-            print(f"✅✅isMember->False")
             return False
         except Exception as e:
-            print(f"ERROR in getting isMember:{str(e)}")
+            logger.error(e)
             return False
     
     def get_moderator(self,obj):
@@ -98,6 +94,14 @@ class RoomSerializerForPagination(serializers.ModelSerializer):
         except Exception as e:
             print(f"ERROR in getting tags:{str(e)}")
     
+    def get_moderation_type(self,obj):
+        try:    
+            return RoomModerationType.get_moderation_type(obj.id)
+        except Exception as e:
+            print(f"ERROR in getting moderation type:{str(e)}")
+        # obj=obj.room_moderation_type.all()
+        # obj=obj[0]
+        # if obj.moderation_type==RoomModerationType.PUBLIC:
 
 class RoomSerializer(serializers.ModelSerializer):
     author=serializers.SerializerMethodField()
@@ -105,7 +109,7 @@ class RoomSerializer(serializers.ModelSerializer):
     members=serializers.SerializerMethodField() 
     moderator=serializers.SerializerMethodField()
     tags=serializers.SerializerMethodField()
-
+    moderation_type=serializers.SerializerMethodField()
     class Meta:
         model=Room
         fields='__all__'
@@ -124,7 +128,6 @@ class RoomSerializer(serializers.ModelSerializer):
                 dct["status"]=member.profile.is_online
                 lst.append(dct)
 
-            # print(f"😀😀lst{lst}")
             return lst
         except User.DoesNotExist:
             return []
@@ -132,6 +135,7 @@ class RoomSerializer(serializers.ModelSerializer):
     def get_moderator(self,obj):
         lst=[]
         room=Room.objects.get(id=obj.id)
+        if not room.moderator.exists():return lst
         mods=room.moderator.all()
         for mod in mods:
             dct={}
@@ -151,10 +155,13 @@ class RoomSerializer(serializers.ModelSerializer):
         if len(obj.tags)<1:return []
         return obj.tags
 
+    def get_moderation_type(self,obj):
+        return RoomModerationType.get_moderation_type(obj.id)
 
 
 
 class RoomSerializerForCreation(serializers.ModelSerializer):
+    #if moderator:<=0 its users if -1 semi mod,-2 auto mod
     moderator = serializers.ListField(
         child=serializers.IntegerField(), write_only=True
     )
@@ -172,15 +179,26 @@ class RoomSerializerForCreation(serializers.ModelSerializer):
             main_topic = topicsList(validated_data["topic"])
             parent_topic = Topic.objects.get(topic=main_topic)
 
-            room = Room.objects.create(
-                author=user,
-                **validated_data,
-                parent_topic=parent_topic,
-            )
+            with transaction.atomic():
+                room = Room.objects.create(
+                    author=user,
+                    **validated_data,
+                    parent_topic=parent_topic,
+                )
 
-            # Add moderators
-            users = User.objects.filter(id__in=moderators)
-            room.moderator.set(users)
+                # Add moderators
+                if moderators[0]<0:
+                    "case when not manual moderation"
+                    if moderators[0]==-1:
+                        RoomModerationType.objects.create(room=room,is_semi_auto_moderated=True)
+                    elif moderators[0]==-2:
+                        RoomModerationType.objects.create(room=room,is_auto_moderated=True)
+                
+                else:    
+                    "case when manual moderation"
+                    RoomModerationType.objects.create(room=room,is_manually_moderated=True)
+                    users = User.objects.filter(id__in=moderators)
+                    room.moderator.set(users)
 
             return room
 
@@ -201,8 +219,16 @@ class RoomSerializerForCreation(serializers.ModelSerializer):
                     instance.topic=validated_data["topic"]
 
                 if "moderator" in validated_data:
-                    mods=User.objects.filter(id__in=validated_data["moderator"])
-                    instance.moderator.set(mods)
+                    if validated_data["moderator"][0]<0:
+                        "case when not manual moderation"
+                        instance.moderator.clear()
+                        if validated_data["moderator"][0]==-1:
+                            RoomModerationType.objects.create(room=instance,is_semi_auto_moderated=True)
+                        elif validated_data["moderator"][0]==-2:
+                            RoomModerationType.objects.create(room=instance,is_auto_moderated=True)
+                    else:
+                        mods=User.objects.filter(id__in=validated_data["moderator"])
+                        instance.moderator.set(mods)
             
             instance.save()
             print(f"parent_topic={instance.parent_topic.topic}")

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import UserProfile,Room,Message,Vote,Topic,History,Recommend,Poll,PollVote,ChatFileLog,MessageSummerizedStatus,Notification,VectorDbAdditionStatus
+from .models import UserProfile,Room,Message,Vote,Topic,History,Recommend,Poll,PollVote,ChatFileLog,MessageSummerizedStatus,Notification,VectorDbAdditionStatus,RoomModerationType
 # Register your models here.
 
 admin.site.register(UserProfile)
@@ -15,3 +15,4 @@ admin.site.register(ChatFileLog)
 admin.site.register(MessageSummerizedStatus)
 admin.site.register(Notification)
 admin.site.register(VectorDbAdditionStatus)
+admin.site.register(RoomModerationType)

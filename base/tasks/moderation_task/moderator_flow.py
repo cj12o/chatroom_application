@@ -32,11 +32,11 @@ async def connectToWs(*args)->None:
 
 """setuped to run every k minutes"""
 def moderate(corpus:list[tuple[int,str]])->list[int]:
-    from base.logger import logger
-    from base.tasks.moderation_task.load_model import VECTORIZER,MODEL
-    
     """model prediction gets returned"""
     try:
+        from base.logger import logger
+        from base.tasks.moderation_task.load_model import VECTORIZER,MODEL
+    
         
         results_vec={}
         for id,text in corpus:
@@ -104,12 +104,15 @@ def moderate(corpus:list[tuple[int,str]])->list[int]:
 
 @shared_task
 def start_moderation():
+    "start moderation "
     from base.models import Message
     from base.logger import logger
     try:
         
         qs = (
-            Message.objects.filter(is_moderated=False)
+            Message.objects
+            .filter(Q(is_moderated=False)&Q(is_semi_moderated=False))
+            .filter(Q(room_message__is_manually_moderated=False)&(Q(room_message__is_semi_auto_moderated=True)|Q(room_message__is_auto_moderated=True)))
             .exclude(author__username="agent")
             .order_by("id")[:10]
         )
@@ -124,7 +127,7 @@ def start_moderation():
         toxic_ids = moderate(corpus)
 
     
-        replaced_msg = "🛡️ Removed by Automatic room moderation, message was found to be toxic."
+        replaced_msg = "Removed by Automatic room moderation, message was found to be against guidlines."
 
         for msg_id in toxic_ids:
             msg = Message.objects.get(id=msg_id)
@@ -133,11 +136,21 @@ def start_moderation():
             username = msg.author.username
             room_id = msg.room.id
 
-            
-            msg.message = replaced_msg
-            msg.is_moderated = True
-            msg.save()
 
+
+#   is_auto_moderated=models.BooleanField(default=False)
+#     is_semi_auto_moderated=models.BooleanField(default=True)
+#     is_manually_moderated=models.BooleanField(default=False)
+    
+            if msg.room.is_auto_moderated:
+                msg.message = replaced_msg
+                msg.is_moderated = True
+                msg.save()
+    
+            elif msg.room.is_semi_auto_moderated:
+                msg.is_flaged_as_unsafe = True
+                msg.is_semi_moderated = True
+                msg.save()
             
             async_to_sync(connectToWs)(
                 replaced_msg,     # message
