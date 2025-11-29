@@ -15,34 +15,20 @@ from ..logger import logger
 from channels.layers import get_channel_layer
 import asyncio
 
-def helper(id:int,lst:list):
-    # message=Message.objects.get(id=id)
-    # votes=Vote.objects.filter(Q(message__id=message.id))
-    # upvotes=votes.filter(Q(vote=1))
-    # downvotes=votes.filter(Q(vote=-1))
-    
-    
-    # d={"id":message.id,"author":message.author.username,"message":message.message,"upvotes":len(upvotes),"downvotes":len(downvotes),"children":[]}
-    # lst.append(d)
-
-    message=Message.objects.get(id=id)
-    serializer=MessageSerializerForCreation(message)
-    print(f"✅✅Serializer message view{serializer.data}")
-    
-    lst.append(serializer.data if serializer.data else {})
-
-    # dct[id]=d
+def helper(id:int,lst:list)->list:
+    "recursion based method to give hierarchy of messages in nested way"
     try:
-        # print("children:",message.parent_message.all())
+        message=Message.objects.get(id=id)
+        serializer=MessageSerializerForCreation(message)
+        
+        lst.append(serializer.data if serializer.data else {})
+
         if message.parent_message.all():   
             for m in message.parent_message.all():
-                # print(f"❌❌Child if:{m}")
                 helper(m.id,lst[len(lst)-1]["children"])
     except Exception as e:
-        # dct[id]={}
-        print(f"❌❌Error:{e}")
-        # return {}
-    
+        logger.error(e)
+
 
 def _build_absolute_media_url(resource):
     if not resource:
@@ -163,16 +149,13 @@ class MessageApiview(APIView):
 
     def get(self,request,pk):
         messages=Message.objects.filter(Q(parent=None))
-        # dct={}
+    
         lst=[]
         if pk!=None:
             messages=messages.filter(Q(room__id=pk))
         for m in messages:
             helper(m.id,lst)
-        # lst=[v for k,v in dct.items()]
-
-        print(f"✅✅Final dcyt:{lst}")
-
+        
 
         return Response({
             "messages":lst
@@ -215,21 +198,6 @@ class MessageApiview(APIView):
             "error":serializer.errors,
             "message":"error in updating msg"
         },status=status.HTTP_400_BAD_REQUEST)       
-    
-    # def put(self,request,pk):
-    #     data=request.data
-    #     msg=Message.objects.get(id=pk)
-    #     serializer=MessageSerializer(instance=msg,data=data,partial=False)
-    #     if serializer.is_valid():
-    #         serializer.save()
-    #         return Response({
-    #             "msg_lst":serializer.data,
-    #             "message":"updated msg"
-    #         },status=status.HTTP_200_OK)
-
-    #     return Response({
-    #         "error":serializer.errors,
-    #         "message":"error in updating msg"
-    #     },status=status.HTTP_400_BAD_REQUEST)       
+         
 
 

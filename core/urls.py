@@ -7,6 +7,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path("api/",include('base.api.urls')),
     path("api/room_stats/",include('base.api.room_stats_urls')),
+    path("api/moderation/",include('base.api.room_moderation_urls'))
 ]
 
 if settings.DEBUG==True:

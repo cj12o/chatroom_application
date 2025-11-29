@@ -2,7 +2,7 @@ from rest_framework import serializers
 from ..models.message_model import Message,Vote
 from django.db.models import Q
 from django.conf import settings
-
+from ..logger import logger
 
 class MessageSerializerForCreation(serializers.Serializer):
     id=serializers.SerializerMethodField()
@@ -16,6 +16,7 @@ class MessageSerializerForCreation(serializers.Serializer):
     downvotes=serializers.SerializerMethodField()
     children=serializers.SerializerMethodField()
     hasPoll=serializers.SerializerMethodField()
+    is_unsafe=serializers.SerializerMethodField()
 
     # class Meta:
     #     model=Message
@@ -78,6 +79,8 @@ class MessageSerializerForCreation(serializers.Serializer):
         if obj.poll_set.exists(): return True
         return False
     
+    def get_is_unsafe(self,obj):
+        return obj.is_unsafe
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model=Message
@@ -104,3 +107,39 @@ class MessageSerializer(serializers.ModelSerializer):
         msg.message=validated_data["message"]
         msg.save()
         return msg
+    
+class MessageSerializerForModeration(serializers.Serializer):
+    
+    id=serializers.SerializerMethodField()
+    message=serializers.SerializerMethodField()
+    images_msg=serializers.SerializerMethodField()
+    file_msg=serializers.SerializerMethodField()
+
+    def get_id(self,obj):
+        try:
+            return obj.id
+        except Exception as e:
+            logger.error(e)
+            return None
+    
+    def get_message(self,obj):
+        try:
+            return obj.message
+        except Exception as e:
+            logger.error(e)
+            return None
+        
+    def get_images_msg(self,obj):
+        try:
+            return f"{settings.SITE_BASE_URL}{obj.images_msg.url}"
+        except Exception as e:
+            logger.error(e)
+            return None
+        
+    
+    def get_file_msg(self,obj):
+        try:
+            return f"{settings.SITE_BASE_URL}{obj.file_msg.url}"
+        except Exception as e:
+            logger.error(e)
+            return None

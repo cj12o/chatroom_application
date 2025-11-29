@@ -156,7 +156,7 @@ class RoomSerializer(serializers.ModelSerializer):
 
 class RoomSerializerForCreation(serializers.ModelSerializer):
     moderator = serializers.ListField(
-        child=serializers.CharField(), write_only=True
+        child=serializers.IntegerField(), write_only=True
     )
 
     class Meta:
@@ -166,6 +166,7 @@ class RoomSerializerForCreation(serializers.ModelSerializer):
     def create(self, validated_data):
         try:
             moderators = validated_data.pop("moderator", [])
+            print(f"Moderators:{moderators}")
             user = self.context["request"].user
 
             main_topic = topicsList(validated_data["topic"])
@@ -178,7 +179,7 @@ class RoomSerializerForCreation(serializers.ModelSerializer):
             )
 
             # Add moderators
-            users = User.objects.filter(username__in=moderators)
+            users = User.objects.filter(id__in=moderators)
             room.moderator.set(users)
 
             return room
@@ -211,3 +212,7 @@ class RoomSerializerForCreation(serializers.ModelSerializer):
         except Exception as e:
             logger.error(e)
             
+class RoomSerializerForModeration(serializers.ModelSerializer):
+    class Meta:
+        model=Room
+        fields=['id','name']

@@ -22,6 +22,7 @@ class Message(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_moderated=models.BooleanField(default=False)    
+    is_unsafe=models.BooleanField(default=False)
 
 class Vote(models.Model):
     user=models.ForeignKey(to=User,on_delete=models.CASCADE,related_name="user_votes")
