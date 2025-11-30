@@ -86,10 +86,12 @@ class RecommndationSerializer(serializers.Serializer):
     def get_isMember(self,obj):
         try:
             user_auth_status=self.context.get("user_auth_status", False)
-            if not user_auth_status: return False
+            if not user_auth_status: 
+                return False
             username=self.context.get("username", "")
             qs=obj.room.members.filter(Q(username=username))
-            if len(qs)>0:return True
+            if len(qs)>0:
+                return True
             return False
         except Exception as e:
             logger.error(f"ERROR in getting isMember:{str(e)}")

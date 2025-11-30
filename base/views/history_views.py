@@ -1,8 +1,4 @@
 from ..models.user_history_model import History
-from ..models.user_history_model import History
-from datetime import datetime
-from django.contrib.auth.models import User
-from ..models import Room
 from ..tasks.recomm_tasks.llm_task import orchestrator
 from ..logger import logger
 

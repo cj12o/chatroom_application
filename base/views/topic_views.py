@@ -1,15 +1,12 @@
-from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated,IsAdminUser
+from rest_framework.permissions import IsAdminUser
 from rest_framework.authentication import TokenAuthentication
-from django.db.models import Q
 from rest_framework.views import APIView
 
 from ..models import Topic
 from  ..serializers.topic_serializer import TopicSerializer
 
-from ..views.topic_filter import topicsList
 
 #for admin set topic(parent topic) but get every one 
 class TopicApiview(APIView):

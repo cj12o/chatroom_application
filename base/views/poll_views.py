@@ -1,7 +1,5 @@
 from ..models.poll_model import Poll,PollVote
 from rest_framework.views import APIView
-from ..models.message_model import Message
-from rest_framework.decorators import permission_classes,authentication_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 from django.db.models import Q

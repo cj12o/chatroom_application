@@ -1,8 +1,4 @@
-import django
-django.setup()
-
 from channels.middleware import BaseMiddleware
-from django.contrib.auth.models import User
 from channels.db import database_sync_to_async
 from rest_framework.authtoken.models import Token
 from base.models.userprofile_model import UserProfile

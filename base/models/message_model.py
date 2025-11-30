@@ -85,7 +85,8 @@ def delete_message(sender,instance,**kwargs):
 def send_modded_message(sender,created,instance,**kwargs):
     global K
     try:
-        if not created and instance.is_moderated:return
+        if not created and instance.is_moderated:
+            return
         reddis.incr(name="unmodded",amount=1)
         print(f"Message count:{reddis.get("unmodded")}")
         

@@ -3,18 +3,15 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.authtoken.models import Token
 from django.db.models import Q
-from rest_framework.authentication import SessionAuthentication, BasicAuthentication,TokenAuthentication
+from rest_framework.authentication import BasicAuthentication,TokenAuthentication
 from rest_framework.permissions import IsAuthenticated,IsAdminUser
-from rest_framework.decorators import api_view
 from django.conf import settings
 
 
 
-from ..models.userprofile_model import UserProfile,User
+from ..models.userprofile_model import User
 from ..serializers.user_serializer import UserSerializer,AdminLoginSerializer,SignupSerializer
-from ..serializers.userprof_serializer import UserProfSerializer
 
-from ..logger import logger
 
 from ..threadPool import ThreadPoolManager
 from ..views.history_views import setHistory
@@ -67,7 +64,8 @@ class LogoutApiview(APIView):
                 },status=status.HTTP_200_OK)
 
 
-            else: raise Exception("Invalid user")
+            else: 
+                raise Exception("Invalid user")
 
         except Exception as e:
             print(f"Error in logout:{str(e)}")
@@ -142,12 +140,12 @@ class UserApiview(APIView):
                 serializer.save()
                 return Response({
                     "userdata":serializer.data,
-                    "message":f"user updated"
+                    "message":"user updated"
                 },status=status.HTTP_200_OK)
             
             return Response({
                 "errors":serializer.errors,
-                "message":f"error in user  updation"
+                "message":"error in user  updation"
             },status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({
@@ -163,17 +161,17 @@ class UserApiview(APIView):
                 serializer.save()
                 return Response({
                     "userdata":serializer.data,
-                    "message":f"user: updated"
+                    "message":"user: updated"
                 },status=status.HTTP_400_BAD_REQUEST)
 
             return Response({
                 "errors":serializer.errors,
-                "message":f"error in user updation"
+                "message":"error in user updation"
             },status=status.HTTP_400_BAD_REQUEST)
         
         return Response({
             "errors":"Invalid id,no such user",
-            "message":f"error in user  updation"
+            "message":"error in user  updation"
         },status=status.HTTP_400_BAD_REQUEST)
     
     def delete(self,request):
@@ -183,10 +181,10 @@ class UserApiview(APIView):
         if user:
             user.delete()
             return Response({
-                "message":f" user deleted"
+                "message":" user deleted"
             },status=status.HTTP_200_OK)
         
         return Response({
             "errors":"Invalid id,no such user",
-            "message":f"error in user  updation"
+            "message":"error in user  updation"
         },status=status.HTTP_400_BAD_REQUEST)

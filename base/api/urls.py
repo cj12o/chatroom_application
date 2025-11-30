@@ -1,6 +1,4 @@
-from django.urls import path,include
-from django.conf.urls.static import static
-from django.conf import settings
+from django.urls import path
 
 from ..views import admin_views as av
 
@@ -11,7 +9,6 @@ from ..views import message_views as mv
 from ..views import profile_views as pv
 from ..views import topic_views as tv
 
-from ..views import history_views as hv
 
 from ..views import vote_views as vv
 

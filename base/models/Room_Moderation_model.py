@@ -1,6 +1,5 @@
 from django.db import models
 from ..logger import logger
-from django.db.models import Q,Case,When,Value
 from enum import IntEnum
 class ModerationType(IntEnum):
     Auto=-2

@@ -1,9 +1,7 @@
 from django.core.management.base import BaseCommand
 from django_celery_beat.models import PeriodicTask, IntervalSchedule
-from django_celery_beat.models import PeriodicTask,IntervalSchedule
 from django.db.models import Q
 from logging import info
-import json
 
 class Command(BaseCommand):
     help = "Create or update Celery periodic tasks"
@@ -31,5 +29,5 @@ class Command(BaseCommand):
             task.enabled=True
             task.save()
             
-            info(f"Periodictask created task : RoomAgent")
+            info("Periodictask created task : RoomAgent")
         

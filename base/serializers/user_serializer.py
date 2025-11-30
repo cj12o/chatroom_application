@@ -18,14 +18,14 @@ class UserSerializer(serializers.Serializer):
         if self.instance:
             users=User.objects.exclude(id=self.instance.id)
 
-        if self.partial==False:
+        if not self.partial:
             if users.filter(email=validated_data["email"]).exists():
                 raise serializers.ValidationError("User with this email is already registered")
             
             if users.filter(username=validated_data["username"]).exists():
                 raise serializers.ValidationError("Username is already registered")    
 
-        if self.partial==True:
+        if self.partial:
             if "email" in  validated_data and users.filter(email=validated_data["email"]).exists():
                 raise serializers.ValidationError("User with this email is already registered")
             
@@ -98,7 +98,7 @@ class SignupSerializer(serializers.Serializer):
         user=User.objects.filter(Q(username=data["username"]) | Q(email=data["email"]))
         if not user:
             return data
-        raise serializers.ValidationError(f"username or email are already Taken")
+        raise serializers.ValidationError("username or email are already Taken")
                 
 
     def create(self,validated_data):

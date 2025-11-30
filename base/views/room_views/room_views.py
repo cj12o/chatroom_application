@@ -1,21 +1,17 @@
 from rest_framework.views import APIView
-from rest_framework.decorators import api_view,permission_classes,authentication_classes
-from asgiref.sync import sync_to_async
+from rest_framework.decorators import api_view,authentication_classes
 from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.authentication import TokenAuthentication,BaseAuthentication
-from django.contrib.auth.models import User
+from rest_framework.authentication import TokenAuthentication
 
-from base.models import Room,UserProfile,Topic
+from base.models import Room,UserProfile
 from ...serializers.room_serializer import RoomSerializer,RoomSerializerForPagination,RoomSerializerForCreation
 
 from ...logger import logger
-from ..topic_filter import topicsList
 # from .userRecommendation.chroma import getRecommendation
 
-from django.core.paginator import Paginator
 from rest_framework.pagination import PageNumberPagination
 
 class LargeResultsSetPagination(PageNumberPagination):

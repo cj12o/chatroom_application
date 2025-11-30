@@ -1,12 +1,9 @@
-from django.db import models,transaction
+from django.db import models
 from django.dispatch import receiver
 from .message_model import Message
 from .room_model import Room
-from channels.layers import get_channel_layer
-from concurrent.futures import ThreadPoolExecutor
 from django.contrib.auth.models import User
-from django.db.models import Q,signals
-import asyncio
+from django.db.models import signals
 from django.utils.timezone import now
 from datetime import timedelta
 from ..logger import logger
@@ -88,12 +85,10 @@ class PersonalNotification(models.Model):
             logger.error(e)        
     
 
-#TODO:add recomm is ready
-
-
 @receiver(sender=Message,signal=signals.post_save)
 def task_create_notification(sender,instance,created,**kwargs):
-    if not created:return
+    if not created:
+        return
     msg=f"Activity:{instance.author.username}: Posted {instance.message}"
         
     dct={

@@ -1,11 +1,13 @@
-import logging
-from django.conf import settings
-import os
 from celery import shared_task
-import joblib
 from django.db.models import Q
-import asyncio
 from asgiref.sync import async_to_sync
+from redis import Redis
+
+
+reddis=Redis(host='localhost', port=6379)
+K=10
+
+
 
 async def connectToWs(*args)->None:
     from base.logger import logger
@@ -69,6 +71,7 @@ def start_moderation():
     from base.models import Message
     from base.logger import logger
     from base.models.Room_Moderation_model import ModerationType
+    from base.tasks import add_summerize_task
     try:
         
         qs = (
@@ -103,7 +106,7 @@ def start_moderation():
     
             if msg.room.room_moderation_type.moderation_type==ModerationType.Auto:
                 Message.objects.filter(id=msg_id).update(message=replaced_msg, is_moderated=True,is_unsafe=True)
-               
+
                 async_to_sync(connectToWs)(
                     replaced_msg,     # message
                     parent_id,        # parent
@@ -111,6 +114,13 @@ def start_moderation():
                     msg_id,           # message_id
                     room_id,          # room_id
                 )
+                #only for auto  mod 
+                key=f"room_{room_id}_mod_count"
+                current_count=reddis.incr(key,amount=1)
+
+                if current_count>=K:
+                    add_summerize_task.delay({"room_id":msg.room.id})
+                    reddis.set(name=key,value=0)
 
             elif msg.room.room_moderation_type.moderation_type==ModerationType.SemiAuto:
                 Message.objects.filter(id=msg_id).update(is_semi_moderated=True,is_flaged_as_unsafe=True)

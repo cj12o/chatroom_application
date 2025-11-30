@@ -4,7 +4,6 @@ from rest_framework import status
 from django.db.models import Q
 from base.models import Message
 
-from django.conf import settings
 
 from ..logger import logger
 
@@ -51,7 +50,7 @@ def start_moderation():
         corpus=[(msg.id,msg.message) for msg in qs]
         result=moderate(corpus=corpus)
 
-        new_message=f"🛡️ Removed by Automatic room moderation ,message was found to be :toxic"
+        new_message="🛡️ Removed by Automatic room moderation ,message was found to be :toxic"
 
         for message_id in result:
             Message.objects.filter(id=message_id).update(message=new_message,is_moderated=True)

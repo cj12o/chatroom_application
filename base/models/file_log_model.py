@@ -6,13 +6,9 @@ from django.db.models  import signals,Q
 from django.dispatch import receiver
 import os
 from django.conf import settings
-from base.tasks import add_summerize_task
 from ..logger import logger
 
-from redis import Redis
 
-reddis=Redis(host='localhost', port=6379)
-K=5
 
 base_dir=settings.BASE_DIR
 
@@ -25,9 +21,7 @@ class ChatFileLog(models.Model):
     @classmethod
     def get_file(cls,room_id)->str:  
         try:
-            """
-            method return file path
-            """
+            "method return file path"
             
             file=cls.objects.filter(Q(room_id=room_id))
 
@@ -47,7 +41,6 @@ class MessageSummerizedStatus(models.Model):
 
     @classmethod
     def get_list_unsummerized(cls):
-        from ..views.Rag.perpFiles import get_json_for_celery
         qs=cls.objects.filter(Q(status=False)).values()[:10]
         return [q.message for q in qs]
 
@@ -56,32 +49,38 @@ class MessageSummerizedStatus(models.Model):
 @receiver(signals.post_save, sender=Message)
 def signal_receiver(sender,instance,created,**kwargs):
     try:
-        global reddis
-        if created and not instance.is_moderated:
-            print(f"🤖🤖🤖SIGNAL RECIEVED ,message:{instance.message}")
-            room_id=instance.room.id
-            msg_new_obj=MessageSummerizedStatus.objects.create(message=instance)
-            reddis.incr(name=f"room_{room_id}",amount=1)
-            if reddis.get(f"room_{room_id}")>=K:
-                #todo max
-                add_summerize_task.delay({room_id:room_id})
-                reddis.set(name=f"room_{room_id}",value=0)
-
+        if not created:
+            return
+        qs=MessageSummerizedStatus.objects.filter(Q(message__id=instance.id))
+        if len(qs)>0:
+            return
+        MessageSummerizedStatus.objects.create(message=instance)
     except Exception as e:
         logger.error(e)
 
 
-@receiver(signals.post_save,sender=Room)
-def create_Chat_file(sender,instance,created,**kwargs):
-    "room creation signal->chatfile creation"
+@receiver(signals.post_save, sender=Room)
+def create_chat_file(sender, instance, created, **kwargs):
+    """
+    Room creation signal -> chat file creation
+    """
     try:
-        
-        if not created:return 
-        "init file"
-        chat_file_path=os.path.join(base_dir,f"media/text_rag_files/{instance.name}.txt")
-        ChatFileLog.objects.update_or_create(room=instance,fileLocation=chat_file_path)
-        # fileobj.fileLocation=chat_file_path
-        # fileobj.save()
-        logger.info(f"file created at {chat_file_path} for Room {instance.name}")
+        if not created:
+            return
+
+        folder_path = os.path.join(base_dir, "media/text_rag_files")
+        os.makedirs(folder_path, exist_ok=True)      # ensure folder exists
+
+        chat_file_path = os.path.join(folder_path, f"{instance.id}.txt")
+
+        if not os.path.exists(chat_file_path):
+            # actually create the file
+            with open(chat_file_path, "w", encoding="utf-8") as f:
+                f.write("")
+
+            ChatFileLog.objects.create(room=instance, fileLocation=chat_file_path)
+
+            logger.info(f"File created at {chat_file_path} for Room {instance.name}")
+
     except Exception as e:
-        logger.error(e)
+        logger.error(f"Error creating chat file: {str(e)}")

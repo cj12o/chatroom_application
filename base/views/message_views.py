@@ -1,15 +1,13 @@
 from rest_framework.views import APIView
-from django.contrib.auth.models import User
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated,AllowAny
-from rest_framework.authentication import TokenAuthentication,BaseAuthentication
+from rest_framework.authentication import TokenAuthentication
 from rest_framework import status
 from django.db.models import Q
-from rest_framework.decorators import api_view
 from django.conf import settings
 
 from ..serializers.message_serializer import MessageSerializerForCreation,MessageSerializer
-from ..models.message_model import Message,Vote
+from ..models.message_model import Message
 from ..models.room_model import Room
 from ..logger import logger
 from channels.layers import get_channel_layer

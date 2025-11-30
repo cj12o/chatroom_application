@@ -6,8 +6,6 @@ from .room_model import Room
 from .poll_model import Poll,PollVote
 from .vectordbstatus_model import VectorDbAdditionStatus
 from .notification_model import Notification,PersonalNotification
-from .userprofile_model import UserProfile 
-from .user_history_model import History
 from .recommendation_model import Recommend
 from .file_log_model import ChatFileLog,MessageSummerizedStatus
 from .Room_Moderation_model import RoomModerationType

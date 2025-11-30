@@ -1,15 +1,12 @@
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
-from django.contrib.auth.models import User
 from django.db.models import Q
 from rest_framework.response import Response
 from rest_framework import status
-
-from ..models.room_model import Room
 from ..models.recommendation_model import Recommend
 from ..serializers.recommendation_serializers import RecommndationSerializer
-
+from ..logger import logger
 # from .userRecommendation.chroma import getRecommendation
 
 
@@ -20,7 +17,7 @@ def deleteOldRecom(user_id:int):
         oldRecomm.delete()
 
     except Exception as e:
-        pass
+        logger.error(e)
 
 
 class saveRecommendation(APIView):

@@ -1,8 +1,6 @@
-from ...models import ChatFileLog,Message
-import os
+from ...models import ChatFileLog
 from django.conf import settings
 from django.db.models import Q
-from datetime import datetime,date
 from ...logger import logger
 
 

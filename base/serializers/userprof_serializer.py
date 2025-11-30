@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from ..models.userprofile_model import UserProfile
 from ..models.room_model import Room
-from ..models.message_model import Message,User
+from ..models.message_model import User
 from django.conf import settings
 from ..logger import logger
 

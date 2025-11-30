@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from ..models.poll_model import Poll
-from django.db.models import Q
 
 
 

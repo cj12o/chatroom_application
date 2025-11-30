@@ -5,12 +5,12 @@ from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from django.db.models import Q,Case,Count,When,BooleanField
-from rest_framework.decorators import api_view
 from ...models import Room,Message   
 from ...serializers.message_serializer import MessageSerializerForModeration
 from ...logger import logger
 from ...serializers.room_serializer import RoomSerializerForModeration
 from ...models.Room_Moderation_model import ModerationType
+from ...tasks import add_summerize_task
 class ModerationMessageApiview(APIView):
 
     permission_classes=[IsAuthenticated]
@@ -54,7 +54,9 @@ class ModerationMessageApiview(APIView):
 
             if len(id_action_needed)>0:
                 Message.objects.filter(id__in=id_action_needed).update(is_unsafe=True,message="removed By Moderators,as it was voilating safety guidelines")
-
+                ##trigger summerization
+            if len(id_no_action_needed)>=10:
+                add_summerize_task.delay({"room_id":pk})
             Message.objects.filter(id__in=total_ids).update(is_moderated=True)
 
         

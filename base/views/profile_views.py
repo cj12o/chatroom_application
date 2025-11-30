@@ -7,7 +7,6 @@ from rest_framework import status
 from django.db.models import Q
 
 from ..serializers.userprof_serializer import UserProfSerializer,RoomsCreatedSerializer
-from ..serializers.room_serializer import RoomSerializer
 from ..models.userprofile_model import UserProfile
 from ..models.room_model import Room
 from ..logger import logger
@@ -20,12 +19,14 @@ class UserProfileApiview(APIView):
     def get_permissions(self):
         if self.request.method=="GET":
             return []
-        else: return [IsAuthenticated()]
+        else: 
+            return [IsAuthenticated()]
 
     def get_authenticators(self):
         if self.request.method=="GET":
             return []
-        else: return [TokenAuthentication()]
+        else: 
+            return [TokenAuthentication()]
 
         
     def get(self,request,q):

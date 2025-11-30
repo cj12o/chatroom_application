@@ -3,20 +3,19 @@ from base.views.userRecommendation.llm import llm
 import asyncio
 import json
 import uuid
-from ..models.file_log_model import ChatFileLog
 from ..models.room_model import Room
 from langchain.messages import SystemMessage,HumanMessage
-from django.contrib.auth.models import User
 from asgiref.sync import sync_to_async
-import random
 #diff thread pool
 # createDoc=sync_to_async(createDoc,thread_sensitive=False)
+from ..logger import logger
 
 SYSTEM_PROMPT=""
 HUMAN_PROMPT=""
 
 def contextGiver(room_id:int,username:str)->None:
     try:
+        from base.logger import logger
         """
         gives context to chatbot 
         """
@@ -60,10 +59,10 @@ def contextGiver(room_id:int,username:str)->None:
 
         SYSTEM_PROMPT=system_prompt
         HUMAN_PROMPT=human_prompt
-        print(f"🤖🤖SYSTEM_PROMPT:{SYSTEM_PROMPT}")
+        # print(f"SYSTEM_PROMPT:{SYSTEM_PROMPT}")
 
     except Exception as e:
-        print(f"❌❌ERROR in chat bot consumer.py context giver func:{str(e)}")
+        logger.error(f"ERROR in chat bot consumer.py context giver func:{str(e)}")
 
 
 
@@ -80,12 +79,12 @@ class LlmConsumer(AsyncWebsocketConsumer):
         
         await self.accept()
         print(f"SCOPE:{self.scope}")
-        if self.scope["username"]==None:
+        if self.scope["username"] is None:
             await self.close()
-            print("❌❌ Chatbot closed unauthenticated user")
+            logger.error("❌❌ Chatbot closed unauthenticated user")
             return
         
-        print("✅ Chatbot connected")
+        # print("✅ Chatbot connected")
 
         self.room_id = self.scope["url_route"]["kwargs"]["q"]
         self.room_name = await get_room_name(int(self.room_id))
@@ -121,7 +120,7 @@ class LlmConsumer(AsyncWebsocketConsumer):
             self.room_chatbot_group,
             self.channel_name
         )
-        print("❌ Chatbot disconnected")
+        logger.info("❌ Chatbot disconnected")
 
     async def receive(self, text_data):
         print(f"Recieved :{text_data}")

@@ -18,7 +18,8 @@ class ThreadPoolManager:
     @classmethod
     def shutdown(cls):
         "cleans up thread pool executor ,resource gets free"
-        if cls.executor is None: return
+        if cls.executor is None: 
+            return
         cls.executor.shutdown(wait=True)
         logger.info("ThreadPoolManager shutdown")
 

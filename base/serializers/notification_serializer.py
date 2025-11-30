@@ -1,5 +1,4 @@
 from rest_framework import serializers
-from ..models import Notification,PersonalNotification
 
 class PersonalNotificationSerializer(serializers.Serializer):
     room_id=serializers.SerializerMethodField()

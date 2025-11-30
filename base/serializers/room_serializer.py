@@ -4,11 +4,8 @@ from django.db import transaction
 from django.contrib.auth.models import User
 from ..models import UserProfile,RoomModerationType,Room,Topic
 
-from.user_serializer import UserSerializer
 from ..views.topic_filter import topicsList
 from ..logger import logger
-import json
-from ..views.topic_filter import topicsList
 from ..models.Room_Moderation_model import ModerationType
 class RoomSerializerForPagination(serializers.ModelSerializer):
     author=serializers.SerializerMethodField()
@@ -44,7 +41,7 @@ class RoomSerializerForPagination(serializers.ModelSerializer):
             # print(f"😀😀lst{lst}")
             return lst
         except User.DoesNotExist:
-            print(f"ERROR in getting members NOT exists")
+            print("ERROR in getting members NOT exists")
             return []
         
     def get_isMember(self,obj)->bool:
@@ -88,7 +85,8 @@ class RoomSerializerForPagination(serializers.ModelSerializer):
     
     def get_tags(self,obj):
         try:
-            if len(obj.tags)<1:return []
+            if len(obj.tags)<1:
+                return []
             print(f"obj.tags:{obj.tags}")
             return obj.tags
         except Exception as e:
@@ -98,10 +96,8 @@ class RoomSerializerForPagination(serializers.ModelSerializer):
         try:    
             return RoomModerationType.get_moderation_type(obj.id)
         except Exception as e:
-            print(f"ERROR in getting moderation type:{str(e)}")
-        # obj=obj.room_moderation_type.all()
-        # obj=obj[0]
-        # if obj.moderation_type==RoomModerationType.PUBLIC:
+            logger.error(f"ERROR in getting moderation type:{str(e)}")
+    
 
 class RoomSerializer(serializers.ModelSerializer):
     author=serializers.SerializerMethodField()
@@ -135,7 +131,8 @@ class RoomSerializer(serializers.ModelSerializer):
     def get_moderator(self,obj):
         lst=[]
         room=Room.objects.get(id=obj.id)
-        if not room.moderator.exists():return lst
+        if not room.moderator.exists():
+            return lst
         mods=room.moderator.all()
         for mod in mods:
             dct={}
@@ -152,7 +149,8 @@ class RoomSerializer(serializers.ModelSerializer):
         return dct
     
     def get_tags(self,obj):
-        if len(obj.tags)<1:return []
+        if len(obj.tags)<1:
+            return []
         return obj.tags
 
     def get_moderation_type(self,obj):
