@@ -9,7 +9,7 @@ from ..views.topic_filter import topicsList
 from ..logger import logger
 import json
 from ..views.topic_filter import topicsList
-
+from ..models.Room_Moderation_model import ModerationType
 class RoomSerializerForPagination(serializers.ModelSerializer):
     author=serializers.SerializerMethodField()
     parent_topic=serializers.SerializerMethodField()  
@@ -173,6 +173,7 @@ class RoomSerializerForCreation(serializers.ModelSerializer):
     def create(self, validated_data):
         try:
             moderators = validated_data.pop("moderator", [])
+            #if semi mod [-1,..ids]
             print(f"Moderators:{moderators}")
             user = self.context["request"].user
 
@@ -190,15 +191,23 @@ class RoomSerializerForCreation(serializers.ModelSerializer):
                 if moderators[0]<0:
                     "case when not manual moderation"
                     if moderators[0]==-1:
-                        RoomModerationType.objects.create(room=room,is_semi_auto_moderated=True)
+                        print("✅✅case when semi mod",moderators)
+                        RoomModerationType.objects.create(room=room,moderation_type=ModerationType.SemiAuto)
+                        moderators.pop(0)
+                        users = User.objects.filter(id__in=moderators)
+                        room.moderator.set(users)
                     elif moderators[0]==-2:
-                        RoomModerationType.objects.create(room=room,is_auto_moderated=True)
+                        RoomModerationType.objects.create(room=room,moderation_type=ModerationType.Auto)
                 
                 else:    
                     "case when manual moderation"
-                    RoomModerationType.objects.create(room=room,is_manually_moderated=True)
+                    RoomModerationType.objects.create(room=room,moderation_type=ModerationType.Manual)
                     users = User.objects.filter(id__in=moderators)
                     room.moderator.set(users)
+
+                    "make owner memeber"
+                    room.members.add(user)
+                    room.save()
 
             return room
 
@@ -223,10 +232,13 @@ class RoomSerializerForCreation(serializers.ModelSerializer):
                         "case when not manual moderation"
                         instance.moderator.clear()
                         if validated_data["moderator"][0]==-1:
-                            RoomModerationType.objects.create(room=instance,is_semi_auto_moderated=True)
+                            RoomModerationType.objects.update_or_create(room=instance,defaults={'moderation_type':ModerationType.SemiAuto})
+                            mods=User.objects.filter(id__in=validated_data["moderator"][1:])
+                            instance.moderator.set(mods)
                         elif validated_data["moderator"][0]==-2:
-                            RoomModerationType.objects.create(room=instance,is_auto_moderated=True)
+                            RoomModerationType.objects.update_or_create(room=instance,defaults={'moderation_type': ModerationType.Auto})
                     else:
+                        RoomModerationType.objects.update_or_create(room=instance, defaults={'moderation_type': ModerationType.Manual})
                         mods=User.objects.filter(id__in=validated_data["moderator"])
                         instance.moderator.set(mods)
             

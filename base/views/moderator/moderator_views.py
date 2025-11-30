@@ -10,7 +10,7 @@ from ...models import Room,Message
 from ...serializers.message_serializer import MessageSerializerForModeration
 from ...logger import logger
 from ...serializers.room_serializer import RoomSerializerForModeration
-
+from ...models.Room_Moderation_model import ModerationType
 class ModerationMessageApiview(APIView):
 
     permission_classes=[IsAuthenticated]
@@ -22,10 +22,18 @@ class ModerationMessageApiview(APIView):
             rooms=Room.objects.filter(Q(moderator__id=request.user.id)&Q(id=pk))
             room=rooms[0]
 
-            msgs=room.room_message.filter(is_moderated=False)
-            serializer=MessageSerializerForModeration(msgs,many=True)
+            "case :Semi mod ->return only flaged"
+            if room.room_moderation_type.moderation_type==ModerationType.SemiAuto:
+                msgs=room.room_message.filter(Q(is_semi_moderated=True)&Q(is_flaged_as_unsafe=True))
+                serializer=MessageSerializerForModeration(msgs,many=True)
             
+                return Response(serializer.data,status=status.HTTP_200_OK)
+            
+            "case :manual mod ->return all msgs"
+            msgs=room.room_message.filter(Q(is_moderated=False))
+            serializer=MessageSerializerForModeration(msgs,many=True)
             return Response(serializer.data,status=status.HTTP_200_OK)
+        
         except Exception as e:
             logger.error(e)
             return Response({"error":str(e)},status=status.HTTP_400_BAD_REQUEST)

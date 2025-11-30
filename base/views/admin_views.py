@@ -38,6 +38,7 @@ class LoginApiview(APIView):
             "name":str(user.username),
             "token":token.key,
             "profile_pic":profile_pic,
+            "id":user.id,
             "message":"User logged in "
             },status=status.HTTP_200_OK)
         else:

@@ -6,8 +6,15 @@ from rest_framework.authentication import TokenAuthentication
 from rest_framework import status
 from django.db.models import Q
 from rest_framework.decorators import api_view,authentication_classes,permission_classes
-
+from  ..logger import logger
 from ..serializers.notification_serializer import PersonalNotificationSerializer
+from ..models import PersonalNotification
+from ..threadPool import ThreadPoolManager
+def mark_read(ids:list):
+    try:
+        PersonalNotification.objects.filter(id__in=ids).update(mark_read=True)
+    except Exception as e:
+        logger.error(e)
 
 class NotificationView(APIView):
     permission_classes = [IsAuthenticated]
@@ -15,14 +22,16 @@ class NotificationView(APIView):
 
     def get(self, request):
         """gives notification for user """
+        "as rest based so if notification page gets opened then all notifications will be marked as read"
         try:
             qs=request.user.personalnotification_user.filter(Q(mark_read=False))
-
+            
+            ids=[notification.id for notification in qs]
             serializer=PersonalNotificationSerializer(qs,many=True)
-                
-            #     if len(serializer.data)>0:
-            #         lst.append(serializer.data)
-                    
+            
+            #marking all notifications as read,delayed becuase hand to hand update make notification ->[]
+            ThreadPoolManager.get().submit(lambda:mark_read(ids))
+            
             return Response({
                 "notifications":serializer.data
             },status=status.HTTP_200_OK)
@@ -32,6 +41,8 @@ class NotificationView(APIView):
                 "status":"BAD",
                 "error":str(e)
             },status=status.HTTP_400_BAD_REQUEST)
+
+
 
 
 @api_view(['GET'])

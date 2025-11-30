@@ -81,32 +81,61 @@ class MessageSerializerForCreation(serializers.Serializer):
     
     def get_is_unsafe(self,obj):
         return obj.is_unsafe
+# class MessageSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model=Message
+#         fields=['message']
+
+#     def create(self,validated_data):
+#         try:
+#             author=self.context["request"]["author"]#user instance
+#             room=self.context["request"]["room"]
+            
+#             msg=None
+#             if "parent" in self.context["request"]:
+#                 parent=self.context["request"]["parent"]
+#                 msg=Message.objects.create(author=author,room=room,parent=parent)
+#                 print(f"✅✅msg:{msg}")
+#             else:
+#                 msg=Message.objects.create(author=author,room=room)
+            
+#             if "file" in self.context["request"]:   
+#                 msg.file_msg=self.context["request"]["file"]
+            
+#             if "image" in self.context["request"]:   
+#                 msg.images_msg=self.context["request"]["image"]
+
+#             if "message" in self.context["request"]:
+#                 msg.message=self.context["request"]["message"]
+#             else:
+#                 msg.message=""
+#             msg.save()
+#             return msg
+#         except Exception as e:
+#             print(f"Error in creating message:{e}")
+#             logger.error(e)
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:
-        model=Message
-        fields=['message']
+        model = Message
+        fields = ["message", "file_msg", "images_msg", "parent"]
 
-    def create(self,validated_data):
-        author=self.context["request"]["author"]#user instance
-        room=self.context["request"]["room"]
-        
-        msg=None
-        if "parent" in self.context["request"]:
-            parent=self.context["request"]["parent"]
-            msg=Message.objects.create(author=author,room=room,parent=parent)
-            print(f"✅✅msg:{msg}")
-        else:
-            msg=Message.objects.create(author=author,room=room)
-        
-        if "file" in self.context["request"]:   
-            msg.file_msg=self.context["request"]["file"]
-        
-        if "image" in self.context["request"]:   
-            msg.images_msg=self.context["request"]["image"]
+        extra_kwargs = {
+            "message": {"allow_blank": True, "required": False},
+            "file_msg": {"required": False},
+            "images_msg": {"required": False},
+            "parent": {"required": False},
+        }
 
-        msg.message=validated_data["message"]
-        msg.save()
-        return msg
+    def create(self, validated_data):
+        author = self.context["author"]
+        room = self.context["room"]
+
+        return Message.objects.create(
+            author=author,
+            room=room,
+            **validated_data
+        )
+
     
 class MessageSerializerForModeration(serializers.Serializer):
     

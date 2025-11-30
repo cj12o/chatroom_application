@@ -8,6 +8,7 @@ import asyncio
 from ..logger import logger
 from redis import Redis
 from base.tasks import start_moderation
+from ..threadPool import ThreadPoolManager
 
 reddis=Redis(host='localhost', port=6379)
 K=5
@@ -75,7 +76,7 @@ async def connectToWs(case:int,*args)->None:
 @receiver(sender=Message,signal=post_delete)
 def delete_message(sender,instance,**kwargs):
     try:
-        asyncio.run(connectToWs(1,instance.room.id,instance.id))
+        ThreadPoolManager.get().submit(lambda:asyncio.run(connectToWs(1,instance.room.id,instance.id)))
     except Exception as e:
         logger.error(e)
 

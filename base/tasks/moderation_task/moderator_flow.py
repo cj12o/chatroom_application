@@ -63,67 +63,29 @@ def moderate(corpus:list[tuple[int,str]])->list[int]:
         
 
 
-
-# @shared_task
-# def start_moderation():
-#     from base.models import Message
-#     from base.views.logger import logger
-#     """changes message content"""
-#     try:
-       
-#         qs=Message.objects.filter(Q(is_moderated=False)).exclude(Q(author__username="agent"))[:10]
-        
-#         if len(qs)<1:
-#             logger.info("No message to moderate")
-#             return
-        
-#         corpus=[(msg.id,msg.message) for msg in qs]
-#         result=moderate(corpus=corpus)
-
-#         new_message=f"🛡️ Removed by Automatic room moderation ,message was found to be :toxic"
-
-#         for message_id in result:
-#             msg=Message.objects.get(id=message_id)
-#             msg.message=new_message
-#             msg.is_moderated=True
-#             msg.save()
-#             if msg.parent!=None:
-#                 asyncio.run(connectToWs(msg=msg.parent,parent=msg.parent.id,msg_id=msg.id,username=msg.author.username,room_id=msg.room.id))  
-#             else:
-#                 asyncio.run(connectToWs(msg=msg.parent,parent=None,msg_id=msg.id,username=msg.author.username,room_id=msg.room.id))  
-
-            
-            
-        
-        
-#     except Exception as e:
-#         print(f"ERROR IN START_mod :{str(e)}")
-#         logger.error(e)
-
-
-
 @shared_task
 def start_moderation():
     "start moderation "
     from base.models import Message
     from base.logger import logger
+    from base.models.Room_Moderation_model import ModerationType
     try:
         
         qs = (
             Message.objects
             .filter(Q(is_moderated=False)&Q(is_semi_moderated=False))
-            .filter(Q(room_message__is_manually_moderated=False)&(Q(room_message__is_semi_auto_moderated=True)|Q(room_message__is_auto_moderated=True)))
+            .filter(Q(room__room_moderation_type__moderation_type=-1)|Q(room__room_moderation_type__moderation_type=-2))
             .exclude(author__username="agent")
             .order_by("id")[:10]
         )
 
-        if not qs:
+        if not qs or len(qs)<1:
             logger.info("No messages to moderate")
             return
 
         
         corpus = [(msg.id, msg.message) for msg in qs]
-
+        print(f"Corpus:{corpus}")
         toxic_ids = moderate(corpus)
 
     
@@ -138,28 +100,26 @@ def start_moderation():
 
 
 
-#   is_auto_moderated=models.BooleanField(default=False)
-#     is_semi_auto_moderated=models.BooleanField(default=True)
-#     is_manually_moderated=models.BooleanField(default=False)
     
-            if msg.room.is_auto_moderated:
-                msg.message = replaced_msg
-                msg.is_moderated = True
-                msg.save()
-    
-            elif msg.room.is_semi_auto_moderated:
-                msg.is_flaged_as_unsafe = True
-                msg.is_semi_moderated = True
-                msg.save()
-            
-            async_to_sync(connectToWs)(
-                replaced_msg,     # message
-                parent_id,        # parent
-                username,         # username
-                msg_id,           # message_id
-                room_id,          # room_id
-            )
+            if msg.room.room_moderation_type.moderation_type==ModerationType.Auto:
+                Message.objects.filter(id=msg_id).update(message=replaced_msg, is_moderated=True,is_unsafe=True)
+               
+                async_to_sync(connectToWs)(
+                    replaced_msg,     # message
+                    parent_id,        # parent
+                    username,         # username
+                    msg_id,           # message_id
+                    room_id,          # room_id
+                )
 
+            elif msg.room.room_moderation_type.moderation_type==ModerationType.SemiAuto:
+                Message.objects.filter(id=msg_id).update(is_semi_moderated=True,is_flaged_as_unsafe=True)
+                
+
+        msg_ids=[msg_id for msg_id,_ in corpus if msg_id not in toxic_ids]
+            # if msg_id in toxic_ids: continue
+        Message.objects.filter(id__in=msg_ids).update(is_moderated=True)
+            
         logger.info(f"Moderated {len(toxic_ids)} messages.")
 
     except Exception as e:

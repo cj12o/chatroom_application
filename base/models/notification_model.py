@@ -2,7 +2,6 @@ from django.db import models,transaction
 from django.dispatch import receiver
 from .message_model import Message
 from .room_model import Room
-from core.celery import createNotification
 from channels.layers import get_channel_layer
 from concurrent.futures import ThreadPoolExecutor
 from django.contrib.auth.models import User
@@ -11,7 +10,7 @@ import asyncio
 from django.utils.timezone import now
 from datetime import timedelta
 from ..logger import logger
-from base.tasks.notification_task import SendNotification
+from base.tasks.notification_task import SendNotification,createNotification
 """FLOW OF NOTIFICATION
 signal postsave Message-->celery Tak(createNotification)->asyncio (send to ws) -->update sent_status->consumer valides user 
 """

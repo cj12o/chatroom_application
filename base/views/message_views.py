@@ -13,6 +13,7 @@ from ..models.message_model import Message,Vote
 from ..models.room_model import Room
 from ..logger import logger
 from channels.layers import get_channel_layer
+from ..threadPool import ThreadPoolManager
 import asyncio
 
 def helper(id:int,lst:list)->list:
@@ -98,54 +99,104 @@ class MessageApiview(APIView):
     
 
     """post 1 msg"""
-    def post(self,request,pk,*args,**kwargs):
-        try:
-            data=request.data
-            #file
-            # file=request
-            # logging.fatal(f"{file.FILES["file"]}")
-            room_id=pk
+    # def post(self,request,pk,*args,**kwargs):
+    #     try:
+    #         data=request.data
+    #         #file
+    #         # file=request
+    #         # logging.fatal(f"{file.FILES["file"]}")
+    #         room_id=pk
 
-            author=User.objects.get(id=request.user.id)
-            room=Room.objects.get(id=pk)
+    #         author=User.objects.get(id=request.user.id)
+    #         room=Room.objects.get(id=pk)
 
-            context={"request":{"author":author,"room":room}}
+    #         context={"request":{"author":author,"room":room}}
 
-            if request.FILES:
-                if request.FILES.get("file"):
-                    file=request.FILES.get("file")
-                    context["request"]["file"]=file
+    #         if request.FILES:
+    #             if request.FILES.get("file"):
+    #                 file=request.FILES.get("file")
+    #                 context["request"]["file"]=file
                 
-                if request.FILES.get("image"):
-                    image=request.FILES.get("image")
-                    context["request"]["image"]=image
+    #             if request.FILES.get("image"):
+    #                 image=request.FILES.get("image")
+    #                 context["request"]["image"]=image
+                
+    #         message_content=data["message"]
+    #         # print(f"✅✅Message {message_content} len:{len(message_content)}")
+    #         if message_content and len(message_content)>0:
+    #             context["request"]["message"]=message_content 
+    #         else:
+    #             context["request"]["message"]=""
+
+    #         print(f"✅✅Context:{context}")        
+    #         if "parent_id" in data:
+    #             print("✅✅parent in")
+    #             parent=Message.objects.get(id=data["parent_id"])
+    #             context["request"]["parent"]=parent
+
+    #         serializer=MessageSerializer(data=data,partial=False,context=context)
+    #         # print(f"{serializer}")
+            
+    #         if serializer.is_valid():
+    #             msg=serializer.save()
+    #             asyncio.run(sendToWs(room_id=msg.room.id,message=msg.message,username=msg.author.username,message_id=msg.id,file_url=msg.file_msg,image_url=msg.images_msg))
+    #             return Response({
+    #                 "message":"posted msg"
+    #             },status=status.HTTP_200_OK)
+            
+
+
+    #     except Exception as e:
+    #         logger.fatal(f"ERROR in message view:{str(e)}")
+    #         return Response({
+    #             # "error":serializer.errors,
+    #             "message":"error in posting msg"
+    #         },status=status.HTTP_400_BAD_REQUEST)   
         
+    def post(self, request, pk, *args, **kwargs):
+        try:
+            author = request.user
+            room = Room.objects.get(id=pk)
+
+            payload = {}
 
             
-            if "parent_id" in data:
-                print("✅✅parent in")
-                parent=Message.objects.get(id=data["parent_id"])
-                context["request"]["parent"]=parent
+            payload["message"] = request.data.get("message", "")
 
-            serializer=MessageSerializer(data=data,partial=False,context=context)
-            # print(f"{serializer}")
-            
-            if serializer.is_valid():
-                msg=serializer.save()
-                asyncio.run(sendToWs(room_id=msg.room.id,message=msg.message,username=msg.author.username,message_id=msg.id,file_url=msg.file_msg,image_url=msg.images_msg))
-                return Response({
-                    "message":"posted msg"
-                },status=status.HTTP_200_OK)
-            
+            if request.FILES.get("file"):
+                payload["file_msg"] = request.FILES["file"]
 
+            if request.FILES.get("image"):
+                payload["images_msg"] = request.FILES["image"]
+
+            
+            if request.data.get("parent_id"):
+                payload["parent"] = Message.objects.get(id=request.data["parent_id"])
+
+            
+            serializer = MessageSerializer(
+                data=payload,
+                context={"author": author, "room": room}
+            )
+
+            serializer.is_valid(raise_exception=True)
+            msg = serializer.save()
+
+            # Send event to websocket
+            ThreadPoolManager.get().submit(lambda :asyncio.run(sendToWs(
+                room_id=msg.room.id,
+                message=msg.message,
+                username=msg.author.username,
+                message_id=msg.id,
+                file_url=msg.file_msg,
+                image_url=msg.images_msg
+            )))
+
+            return Response({"message": "posted msg"}, status=status.HTTP_200_OK)
 
         except Exception as e:
-            logger.fatal(f"ERROR in message view:{str(e)}")
-            return Response({
-                # "error":serializer.errors,
-                "message":"error in posting msg"
-            },status=status.HTTP_400_BAD_REQUEST)   
-        
+            print(f"Error in posting message: {e}")
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def get(self,request,pk):
         messages=Message.objects.filter(Q(parent=None))

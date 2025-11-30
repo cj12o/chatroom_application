@@ -29,7 +29,7 @@ def populate():
     3)log the status
     """
     try:
-        from core.base.logger import logger
+        from base.logger import logger
         
         chroma_client = chromadb.HttpClient(
             host=settings.CHROMA_HOST,

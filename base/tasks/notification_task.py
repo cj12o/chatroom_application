@@ -1,6 +1,7 @@
 from celery import shared_task
 from channels import layers
 from asgiref.sync import async_to_sync
+from django.db import transaction
 
 async def sendNotificationToWs(json:dict):
     "sends notification to web socket "
@@ -29,4 +30,26 @@ async def sendNotificationToWs(json:dict):
 @shared_task()
 def SendNotification(json:dict):
     async_to_sync(sendNotificationToWs)(json)
+
+
+@shared_task(autoretry_for=(), max_retries=0)
+def createNotification(json:dict):
+    from base.models import Notification,Message,Room,PersonalNotification
+    
+    try:
+        with transaction.atomic():
+            room=Room.objects.get(id=json["room_id"])
+            message=Message.objects.get(id=json["message_id"])
+            notification=Notification.objects.create(room=room,message=message,notify=json["notify"])
+            notification.populatePersonalNotification()
+        json2={
+            "notify":json["notify"],
+            "id":notification.id,
+            "room_id":notification.room.id
+        }
+        
+    #integerity error ,due to race condition
+    except Exception as e:
+        print(f"❌❌ERROR In saving notifocation:{str(e)}")
+        pass
 

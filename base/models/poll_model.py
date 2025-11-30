@@ -7,6 +7,7 @@ from django.db.models import signals
 from django.dispatch import receiver
 from channels.layers import get_channel_layer
 import asyncio
+from ..threadPool import ThreadPoolManager
 
 class Poll(models.Model):
     message=models.ForeignKey(to=Message,on_delete=models.CASCADE)
@@ -67,7 +68,7 @@ def helers(sender,instance,created,**kwargs):
         'room_id':instance.message.id
     }
     print(f"✅✅POLL GENERATOR POST SAVE SENDING {agent_msg}")
-    asyncio.run(connectTows(agent_msg=agent_msg,poll_id=instance.id,message_id=instance.message.id))
+    ThreadPoolManager.get().submit(lambda:asyncio.run(connectTows(agent_msg=agent_msg,poll_id=instance.id,message_id=instance.message.id)))
 
 
 
