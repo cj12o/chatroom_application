@@ -150,7 +150,7 @@ graph LR
 
 ------------------------------------------------------------------------
 
-# Moderation Flow Diagram
+# 🔍 Moderation Flow Diagram
 
 ``` mermaid
 graph TD
@@ -174,7 +174,7 @@ graph TD
 
 ------------------------------------------------------------------------
 
-#  Chatbot Streaming Flow
+# 🔌 Chatbot Streaming Flow
 
 ``` mermaid
 sequenceDiagram
@@ -201,7 +201,7 @@ sequenceDiagram
 
 ------------------------------------------------------------------------
 
-# Tech Stack
+# 🧩 Tech Stack
 
 ### Backend
 
@@ -214,7 +214,6 @@ sequenceDiagram
 -   ThreadPoolExecutor
 
 ### Frontend
-
 -  React
 -  Redux
 ### AI / ML
@@ -240,22 +239,21 @@ redis-server   # start redis locally
 
 python manage.py runserver
 
-celery -A core beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler
-
-celery -A core worker --pool=solo --loglevel=info
+celery -A core worker -l info
+celery -A core beat -l info  # optional
 ```
 
 ------------------------------------------------------------------------
 
 # 🎥 Demo Video
 
-🎬 *in progress*
+🎬 *Add your YouTube/Drive video link here.*
 
 ------------------------------------------------------------------------
 
 # 📸 Screenshots
 
-*in progress*
+(Add images here)
 
 ------------------------------------------------------------------------
 
@@ -267,7 +265,7 @@ MIT License --- free to modify and distribute.
 
 
 
-This project focuses on Real time Sysytems with Agents:
+This project showcases:
 - Real-time systems
 - AI moderation
 - LLM streaming

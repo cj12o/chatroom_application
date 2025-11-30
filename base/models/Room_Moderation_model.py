@@ -7,9 +7,7 @@ class ModerationType(IntEnum):
     Manual=0
 class RoomModerationType(models.Model):
     room=models.OneToOneField(to="Room",on_delete=models.CASCADE,related_name="room_moderation_type")
-    # is_auto_moderated=models.BooleanField(default=False)
-    # is_semi_auto_moderated=models.BooleanField(default=True)
-    # is_manually_moderated=models.BooleanField(default=False)
+    
     moderation_type=models.IntegerField(
         choices=[
             (ModerationType.SemiAuto,"semi-auto moderation"),
