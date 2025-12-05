@@ -9,3 +9,4 @@ from .notification_model import Notification,PersonalNotification
 from .recommendation_model import Recommend
 from .file_log_model import ChatFileLog,MessageSummerizedStatus
 from .Room_Moderation_model import RoomModerationType
+from .join_request_model import JoinRequest, RequestStatus

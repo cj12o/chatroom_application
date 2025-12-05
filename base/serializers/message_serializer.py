@@ -7,6 +7,7 @@ from ..logger import logger
 class MessageSerializerForCreation(serializers.Serializer):
     id=serializers.SerializerMethodField()
     author=serializers.SerializerMethodField()
+    profile_pic=serializers.SerializerMethodField()
     room=serializers.SerializerMethodField()
     message=serializers.SerializerMethodField()
     images_msg=serializers.SerializerMethodField()
@@ -23,7 +24,9 @@ class MessageSerializerForCreation(serializers.Serializer):
         return obj.id
 
     def get_author(self,obj):
-        # dct={"username":obj.author.username,"user_id":obj.author.id}
+        # dct={"username":obj.author.username,"profile_pic":None}
+        # if obj.author.profile_pic:
+        #     dct["profile_pic"]=f"{settings.SITE_BASE_URL}{obj.author.profile_pic.url}"
         return obj.author.username
     
     def get_message(self,obj):
@@ -81,6 +84,13 @@ class MessageSerializerForCreation(serializers.Serializer):
     
     def get_is_unsafe(self,obj):
         return obj.is_unsafe
+
+    def get_profile_pic(self,obj):
+        try:
+            if obj.author.profile and obj.author.profile.profile_pic:
+                return f"{settings.SITE_BASE_URL}{obj.author.profile.profile_pic.url}"
+        except Exception:
+            return None
 
 class MessageSerializer(serializers.ModelSerializer):
     class Meta:

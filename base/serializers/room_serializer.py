@@ -3,18 +3,25 @@ from django.db.models import Q
 from django.db import transaction
 from django.contrib.auth.models import User
 from ..models import UserProfile,RoomModerationType,Room,Topic
+from ..models.join_request_model import JoinRequest, RequestStatus
 
 from ..views.topic_filter import topicsList
 from ..logger import logger
 from ..models.Room_Moderation_model import ModerationType
+from django.conf import settings
+import os
+
+
 class RoomSerializerForPagination(serializers.ModelSerializer):
     author=serializers.SerializerMethodField()
     parent_topic=serializers.SerializerMethodField()  
-    # members=serializers.SerializerMethodField()  
+    members=serializers.SerializerMethodField()  
     isMember=serializers.SerializerMethodField()
     moderator=serializers.SerializerMethodField()
     tags=serializers.SerializerMethodField()
     moderation_type=serializers.SerializerMethodField()
+    has_pending_request=serializers.SerializerMethodField()
+
     class Meta:
         model=Room
         fields='__all__'
@@ -34,14 +41,13 @@ class RoomSerializerForPagination(serializers.ModelSerializer):
             for member in members:
                 dct={}
                 dct["member_id"]=member.id
-                dct["member_name"]=member.username
-                dct["status"]=member.profile.is_online
+                dct["profile_image"]=f"{settings.SITE_BASE_URL}{member.profile.profile_pic.url}" if member.profile.profile_pic else None
                 lst.append(dct)
 
-            # print(f"😀😀lst{lst}")
+            print(f"😀😀lst{lst}")
             return lst
         except User.DoesNotExist:
-            print("ERROR in getting members NOT exists")
+            logger.error("ERROR in getting members NOT exists")
             return []
         
     def get_isMember(self,obj)->bool:
@@ -97,6 +103,21 @@ class RoomSerializerForPagination(serializers.ModelSerializer):
             return RoomModerationType.get_moderation_type(obj.id)
         except Exception as e:
             logger.error(f"ERROR in getting moderation type:{str(e)}")
+            return -2
+
+    def get_has_pending_request(self,obj):
+        try:
+            if "request" in self.context:
+                user = self.context["request"].user
+                if user.is_authenticated:
+                    return JoinRequest.objects.filter(user=user, room=obj, status=RequestStatus.PENDING).exists()
+            elif "user_auth_status" in self.context and self.context["user_auth_status"]:
+                 user = User.objects.get(username=self.context["username"])
+                 return JoinRequest.objects.filter(user=user, room=obj, status=RequestStatus.PENDING).exists()
+            return False
+        except Exception as e:
+            logger.error(f"ERROR in getting pending request:{str(e)}")
+            return False
     
 
 class RoomSerializer(serializers.ModelSerializer):
@@ -122,6 +143,7 @@ class RoomSerializer(serializers.ModelSerializer):
                 dct["member_id"]=member.id
                 dct["member_name"]=member.username
                 dct["status"]=member.profile.is_online
+                dct["profile_image"]=f"{settings.SITE_BASE_URL}{member.profile.profile_pic.url}" if member.profile.profile_pic else None
                 lst.append(dct)
 
             return lst

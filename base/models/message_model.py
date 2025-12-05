@@ -55,7 +55,7 @@ async def connectToWs(case:int,*args)->None:
             )
         else:
             "modded message "
-            message,parent,username,message_id=args
+            message,parent,username,message_id,room_id=args
             channel_layer=get_channel_layer()
             await channel_layer.group_send(
                 f"room_{room_id}",
@@ -85,7 +85,7 @@ def delete_message(sender,instance,**kwargs):
 def send_modded_message(sender,created,instance,**kwargs):
     global K
     try:
-        if not created and instance.is_moderated:
+        if not created or instance.is_moderated:
             return
         reddis.incr(name="unmodded",amount=1)
         print(f"Message count:{reddis.get("unmodded")}")

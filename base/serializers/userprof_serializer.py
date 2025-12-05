@@ -5,17 +5,6 @@ from ..models.message_model import User
 from django.conf import settings
 from ..logger import logger
 
-# class UserProfSerializer(serializers.ModelSerializer):
-#     profile_pic=serializers.SerializerMethodField()
-#     class Meta:
-#         model=UserProfile
-#         fields='__all__'
-
-#     def get_profile_pic(self,obj):
-#         if obj.profile_pic:
-#             return f"{settings.SITE_BASE_URL}{obj.profile_pic.url}"
-#         return None
-
 
 class UserProfSerializer(serializers.ModelSerializer):
     profile_pic=serializers.SerializerMethodField()

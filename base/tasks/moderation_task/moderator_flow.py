@@ -65,8 +65,8 @@ def moderate(corpus:list[tuple[int,str]])->list[int]:
         
 
 
-@shared_task
-def start_moderation():
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def start_moderation(self):
     "start moderation "
     from base.models import Message
     from base.logger import logger
@@ -89,7 +89,11 @@ def start_moderation():
         
         corpus = [(msg.id, msg.message) for msg in qs]
         print(f"Corpus:{corpus}")
-        toxic_ids = moderate(corpus)
+        
+        try:
+            toxic_ids = moderate(corpus)
+        except Exception as model_error:
+            logger.error(f"ML model error: {str(model_error)}")
 
     
         replaced_msg = "Removed by Automatic room moderation, message was found to be against guidlines."
@@ -127,10 +131,11 @@ def start_moderation():
                 
 
         msg_ids=[msg_id for msg_id,_ in corpus if msg_id not in toxic_ids]
-            # if msg_id in toxic_ids: continue
+        
         Message.objects.filter(id__in=msg_ids).update(is_moderated=True)
             
-        logger.info(f"Moderated {len(toxic_ids)} messages.")
+        logger.info(f"Moderated {len(toxic_ids)} toxic messages and {len(msg_ids)} safe messages.")
 
     except Exception as e:
         logger.error(f"ERROR in start_moderation: {str(e)}")
+

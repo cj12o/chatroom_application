@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from ..models.poll_model import Poll
-
+from ..models.poll_model import Poll,PollVote
+from django.conf import settings
 
 
 class PollSerializer(serializers.ModelSerializer):
@@ -12,8 +12,19 @@ class PollSerializer(serializers.ModelSerializer):
         fields="__all__"
     
     def get_author(self,obj):
-        return obj.author.username
-    
+        try:
+            dct={"username":obj.author.username}
+            if obj.author.profile.profile_pic:
+                dct["profile_pic"]=f"{settings.SITE_BASE_URL}{obj.author.profile.profile_pic.url}"
+            return dct
+        except Exception as e:
+            return None
+
     def get_choices(self,obj):
-        return obj.choices["choices"]
+        return obj.choices
     
+
+class VoteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=PollVote,
+        fields="__all__"

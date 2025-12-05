@@ -109,7 +109,7 @@ def llm_node(state: dict) -> dict:
 
     ## Instructions:
     - Always understand the current context from the conversation messages.
-    - If interactivity can be increase by generating a  polll , call  the `pollGenerator` tool.
+    - If interactivity can be increase by generating a  poll, call  the `pollGenerator` tool.
     - else call `threadGenerator` tool.
  
 
@@ -307,28 +307,31 @@ def start_agent():
     
         for r in rooms:
             
-            lastMsg=Message.objects.filter(Q(room__id=r.id)).order_by('-created_at')[0]
-            dt_created=parse_datetime(str(lastMsg.created_at))
-            
-            dt_now=datetime.now()
-
-            if dt_now.day-dt_created.day>=day_diff:
-                
+            lastMsg=Message.objects.filter(Q(room__id=r.id)).order_by('-created_at').first()
+            if lastMsg is None:
+                logger.info(f"No msgs in room {r.name}")
                 agent_msg=main(room_id=r.id,room_name=r.name,room_description=r.description)
-                
-            
-            elif dt_now.hour-dt_created.hour>=hour_diff:
-                agent_msg=main(room_id=r.id,room_name=r.name,room_description=r.description)
-                
-            
-            if agent_msg is not None and "tool_called" in agent_msg:  
-                if agent_msg["tool_called"]=="pollGenerator":
-                    savePolltoDb.delay(room_id=agent_msg["room_id"],username="Agent",message=agent_msg["content"])
+            else:
+                dt_created=parse_datetime(str(lastMsg.created_at))
 
-                else: 
-                    message_id=saveThreadToDb(room_id=agent_msg["room_id"],username="Agent",message=agent_msg["content"])
-                    # asyncio.run(connectToWs(tool_called="threadGenerator",message=agent_msg["content"],message_id=message_id,room_id=r.id))
-                    async_to_sync(connectToWs)(tool_called="threadGenerator",message=agent_msg["content"],message_id=message_id,room_id=r.id)
+                dt_now=datetime.now()
+
+                if dt_now.day-dt_created.day>=day_diff:
+                    agent_msg=main(room_id=r.id,room_name=r.name,room_description=r.description)
+                    
+                
+                elif dt_now.hour-dt_created.hour>=hour_diff:
+                    agent_msg=main(room_id=r.id,room_name=r.name,room_description=r.description)
+                    
+                
+                if agent_msg is not None and "tool_called" in agent_msg:  
+                    if agent_msg["tool_called"]=="pollGenerator":
+                        savePolltoDb.delay(room_id=agent_msg["room_id"],username="Agent",message=agent_msg["content"])
+
+                    else: 
+                        message_id=saveThreadToDb(room_id=agent_msg["room_id"],username="Agent",message=agent_msg["content"])
+                        # asyncio.run(connectToWs(tool_called="threadGenerator",message=agent_msg["content"],message_id=message_id,room_id=r.id))
+                        async_to_sync(connectToWs)(tool_called="threadGenerator",message=agent_msg["content"],message_id=message_id,room_id=r.id)
     
     except Exception as e:
         logger.fatal(f"ERROR in starting agent: {str(e)}")
