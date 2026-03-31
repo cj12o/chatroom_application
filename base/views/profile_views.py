@@ -149,3 +149,9 @@ class UserProfileApiview(APIView):
     #         "errors":"Invalid id,no such user",
     #         "message":f"error in user  updation"
     #     },status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+
+

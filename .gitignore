@@ -7,3 +7,6 @@ celerybeat-schedule-wal
 migrations
 logs 
 *venv
+*__pycache__
+REFACTORING_PLAN.md
+requirements-deploy.txt

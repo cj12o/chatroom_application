@@ -5,6 +5,7 @@ from rest_framework.authentication import TokenAuthentication
 from django.db.models import Q
 from rest_framework.views import APIView
 
+
 from ..models.message_model import Message,Vote
 
 class voteApiview(APIView):
@@ -22,3 +23,4 @@ class voteApiview(APIView):
         return Response({
             "votes":lst
         },status=status.HTTP_200_OK)
+    
