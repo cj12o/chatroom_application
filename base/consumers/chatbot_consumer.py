@@ -3,9 +3,10 @@ from base.views.userRecommendation.llm import llm
 import asyncio
 import json
 import uuid
-from ..models.room_model import Room
+from base.models.room_model import Room
 from langchain.messages import SystemMessage,HumanMessage
 from asgiref.sync import sync_to_async
+from base.services.room_services import get_room_name
 #diff thread pool
 # createDoc=sync_to_async(createDoc,thread_sensitive=False)
 from ..logger import logger
@@ -31,6 +32,7 @@ def contextGiver(room_id:int,username:str)->None:
         
         system_prompt=f"""
         Role:You are a chat room chatbot
+        
 
         Room details:
             Room name:{room.name}
@@ -53,7 +55,6 @@ def contextGiver(room_id:int,username:str)->None:
 
         human_prompt=f"""
         name of the user :{username}
-
         query:
         """
 
@@ -66,9 +67,7 @@ def contextGiver(room_id:int,username:str)->None:
 
 
 
-def get_room_name(room_id:int):
-    room=Room.objects.get(id=room_id)
-    return room.name
+
 
 get_room_name=sync_to_async(get_room_name)
 contextGiver=sync_to_async(contextGiver)

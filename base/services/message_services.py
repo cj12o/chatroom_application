@@ -1,0 +1,147 @@
+from base.models import Room,Message,Poll,Vote
+from django.contrib.auth.models import User
+import json
+from base.logger import logger
+from base.serializers.message_serializer import MessageSerializerForCreation
+
+def saveMessage(room_id:int,username:str,message:str,parent:int|None=None)->int:
+    "saves message to db"
+    try:
+        room=Room.objects.get(id=room_id)
+        author=User.objects.get(username=username)
+
+        msg=Message.objects.create(room=room,author=author,message=message)
+        if parent is not None:
+            parent_msg=Message.objects.get(id=parent)
+            msg.parent=parent_msg
+        
+        msg.save()
+        return msg.id
+    except Exception as e:
+        logger.error(f"MESSAGE NOT SAVED,error:{str(e)}")
+        return -1
+
+
+
+
+def savePoll(room_id:int,username:str,message:str,parent:int|None=None)->int:
+    try:
+        room=Room.objects.get(id=room_id)
+        author=User.objects.get(username=username)
+        
+        msg=Message.objects.create(room=room,author=author,message="")
+        
+        if parent is not None:
+            parent_msg=Message.objects.get(id=parent)
+            msg.parent=parent_msg
+
+        msg.save()
+
+        poll_det=json.loads(message)
+        new_poll=Poll.objects.create(message=msg)
+        new_poll.question=poll_det["question"]
+        new_poll.choices=poll_det={"choices":poll_det["choices"]}
+        new_poll.save()
+        return msg.id
+    except Exception as e:
+        logger.error(f"POLL NOT SAVED,error:{str(e)}")
+        return -1
+
+
+
+def vote_operation(vote_author:str,message_id:int,vote_type:str,room_id:int,status:str)->bool:
+    try:
+        user=User.objects.get(username=vote_author)
+        room=Room.objects.get(id=room_id)
+        msg=Message.objects.get(id=message_id)
+        # print(f"✅✅status:{status}")
+        if status=="subtractVote":
+            vote=Vote.objects.get(user__username=user.username,room__name=room.name,message__id=msg.id)
+            vote.delete()
+            # print("❌deleted vote")
+            return True
+        else:
+            vote_choice=1
+            if vote_type=="downvote":
+                vote_choice=-1
+            vote=Vote.objects.create(user=user,message=msg,room=room,vote=vote_choice)
+            # print("✅added vote")
+            return True
+    except Exception as e:
+        logger.error(f"Error in vote operation:{e}")
+        return False
+    
+
+
+def get_messages(room_id:int,ascending:bool=False)->list:
+    try:
+        order = "created_at" if ascending else "-created_at"
+        return Message.objects.filter(room_id=room_id).select_related('author__profile','room').order_by(order)
+    except Exception as e:
+        logger.error(f"Error in getting messages:{e}")
+        return []
+
+
+def get_message_tree(room_id: int, page: int = 1, page_size: int = 10) -> dict:
+    """
+    Reddit-style paginated message tree.
+    - Paginates root messages (parent=None), newest first
+    - Fetches ALL children for those roots in one extra query
+    - Builds nested tree in Python
+    """
+    
+
+    # 1. Paginate roots
+    roots_qs = (
+        Message.objects
+        .filter(room_id=room_id, parent=None)
+        .order_by('-created_at')
+    )
+    total_roots = roots_qs.count()
+    start = (page - 1) * page_size
+    paginated_roots = roots_qs[start:start + page_size]
+    root_ids = [m.id for m in paginated_roots]
+
+    if not root_ids:
+        return {"messages": [], "page": page, "total_roots": total_roots, "has_next": False}
+
+    # 2. Fetch roots + ALL descendants in one query
+    #    We fetch every message in the room, then filter in Python.
+    #    This is simpler and avoids depth-limited JOIN chains.
+    all_messages = (
+        Message.objects
+        .filter(room_id=room_id)
+        .select_related('author__profile', 'room')
+        .order_by('created_at')
+    )
+
+    # 3. Serialize all messages into a flat dict keyed by id
+    serializer = MessageSerializerForCreation(all_messages, many=True)
+    nodes = {}
+    ids=set()
+    for item in serializer.data:
+        item["children"] = []
+        nodes[item["id"]] = item
+        ids.add(item["id"])
+
+    # 4. Build tree — attach each child to its parent
+    roots = []
+    for item in nodes.values():
+        parent_id = item.get("parent")
+        if parent_id and parent_id in ids:
+            nodes[parent_id]["children"].append(item)
+        else:
+            roots.append(item)
+
+    # 5. Only return roots that are in this page (order: newest first)
+    root_id_set = set(root_ids)
+    paginated = [r for r in roots if r["id"] in root_id_set]
+    # Maintain newest-first order from the paginated query
+    paginated.sort(key=lambda r: root_ids.index(r["id"]))
+
+    return {
+        "messages": paginated,
+        "page": page,
+        "total_roots": total_roots,
+        "has_next": (start + page_size) < total_roots,
+    }

@@ -6,28 +6,15 @@ from rest_framework import status
 from django.db.models import Q
 from django.conf import settings
 
-from ..serializers.message_serializer import MessageSerializerForCreation,MessageSerializer
+from ..serializers.message_serializer import MessageSerializer
 from ..models.message_model import Message
 from ..models.room_model import Room
 from ..logger import logger
 from ..services.user_services import build_absolute_media_url
+from ..services.message_services import get_message_tree
 from channels.layers import get_channel_layer
 from ..threadPool import ThreadPoolManager
 import asyncio
-
-def helper(id:int,lst:list)->list:
-    "recursion based method to give hierarchy of messages in nested way"
-    try:
-        message=Message.objects.get(id=id)
-        serializer=MessageSerializerForCreation(message)
-        
-        lst.append(serializer.data if serializer.data else {})
-
-        if message.parent_message.all():   
-            for m in message.parent_message.all():
-                helper(m.id,lst[len(lst)-1]["children"])
-    except Exception as e:
-        logger.error(e)
 
 
 async def sendToWs(room_id:int,message:str,username:str,message_id:int,file_url,image_url):
@@ -137,18 +124,10 @@ class MessageApiview(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def get(self,request,pk):
-        messages=Message.objects.filter(Q(parent=None))
-    
-        lst=[]
-        if pk!=None:
-            messages=messages.filter(Q(room__id=pk))
-        for m in messages:
-            helper(m.id,lst)
-        
-
-        return Response({
-            "messages":lst
-        },status=status.HTTP_200_OK)
+        page = int(request.GET.get("page", 1))
+        page_size = int(request.GET.get("page_size", 10))
+        result = get_message_tree(pk, page=page, page_size=page_size)
+        return Response(result, status=status.HTTP_200_OK)
         
    
     """pk is message id"""

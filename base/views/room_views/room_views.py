@@ -6,9 +6,9 @@ from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 
-from base.models import Room,UserProfile
+from base.models import Room
 from ...serializers.room_serializer import RoomSerializer,RoomSerializerForPagination,RoomSerializerForCreation
-
+from ...services.room_services import get_room_queryset, get_online_users
 from ...logger import logger
 # from .userRecommendation.chroma import getRecommendation
 
@@ -70,25 +70,27 @@ def listRooms(request):
         qs=None
         if need==-1:
             "case of all rooms"
-            qs=Room.objects.order_by("-updated_at","-created_at")
-            
+            qs=get_room_queryset(ordering=("-updated_at","-created_at"))
+
         elif need==1:
             "case when from search bar a particular room is selected"
-            qs=Room.objects.filter(id=int(keyword))
-        
+            qs=get_room_queryset(filters=Q(id=int(keyword)))
+
         elif need==2:
             "case of parent topic filtering "
-            qs=Room.objects.filter(Q(parent_topic__topic=str(keyword)))
+            qs=get_room_queryset(filters=Q(parent_topic__topic=str(keyword)))
 
         else:
 
             "random word in search bar so dynamic searching"
             keyword=str(keyword).strip().lower()
-            qs=Room.objects.filter(
-            Q(name__icontains=keyword)|
-            Q(parent_topic__topic__icontains=keyword)|
-            Q(author__username__icontains=keyword)|
-            Q(tags__icontains=keyword)).order_by("-updated_at","-created_at")
+            qs=get_room_queryset(
+                filters=Q(name__icontains=keyword)|
+                Q(parent_topic__topic__icontains=keyword)|
+                Q(author__username__icontains=keyword)|
+                Q(tags__icontains=keyword),
+                ordering=("-updated_at","-created_at")
+            )
 
         result_page=paginator.paginate_queryset(qs, request)
 
@@ -127,7 +129,7 @@ class RoomApiview(APIView):
                 raise Exception("Invalid room id")
 
             param=request.GET.get('id')
-            qs=Room.objects.filter(Q(id=param))
+            qs=get_room_queryset(filters=Q(id=param))
             serializer=RoomSerializer(qs,many=True)
             return Response(serializer.data,status=status.HTTP_200_OK)
         except Exception as e:
@@ -198,25 +200,9 @@ class RoomApiview(APIView):
 
 @api_view(['GET'])
 def getOnlineusers(request,pk):
-
-    # TODO Room filter
-    """
-    id+name
-    get online users 
-    """ 
-    room=Room.objects.get(id=pk)
-    users=room.members.all()
-    # if request.GET.get('room_id'):
-    #    room_id=int(request.GET.get('room_id'))
-    #    room=Room.objects.filter(id=room_id)
-    #    onlineUsers=room.room_members.all()
-    #    return Response({
-    #         "is_online":[user.username for user in onlineUsers]
-    #    })
-    print(f"users{users}")
-    
+    """get online users for a room"""
     return Response({
-        "is_online":[[user.username,user.id,UserProfile.objects.get(user__username=user.username).is_online] for user in users]
+        "is_online": get_online_users(pk)
     })
 
 

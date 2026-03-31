@@ -1,97 +1,25 @@
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from django.contrib.auth.models import User
-from base.models.userprofile_model import UserProfile
 from base.models.room_model import Room
 from base.models.message_model import Message,Vote
 from base.models.poll_model import Poll
+from base.services.room_services import get_room_name
 from channels.db import database_sync_to_async
-import json 
+import json
 from ..logger import logger
+from base.services.message_services import saveMessage,vote_operation,savePoll
+from base.services.user_services import set_user_online_status
 # example scope=>
 # scope:Socket:{'type': 'websocket', 'path': '/ws/chat/12/', 'raw_path': b'/ws/chat/12/', 'root_path': '', 'headers': [(b'host', b'127.0.0.1:8000'), (b'connection', b'Upgrade'), (b'pragma', b'no-cache'), (b'cache-control', b'no-cache'), (b'user-agent', b'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36 Edg/141.0.0.0'), (b'upgrade', b'websocket'), (b'origin', b'http://localhost:5173'), (b'sec-websocket-version', b'13'), (b'accept-encoding', b'gzip, deflate, br, zstd'), (b'accept-language', b'en-US,en;q=0.9,en-IN;q=0.8'), (b'sec-websocket-key', b'NpwaBdhav7PJ41+DQzpnKg=='), (b'sec-websocket-extensions', b'permessage-deflate; client_max_window_bits')], 'query_string': b'', 'client': ['127.0.0.1', 63479], 'server': ['127.0.0.1', 8000], 'subprotocols': [], 'asgi': {'version': '3.0'}, 'cookies': {}, 'session': <django.utils.functional.LazyObject object at 0x000002261FC4EE40>, 'user': <channels.auth.UserLazyObject object at 0x000002261FC4EF90>, 'path_remaining': '', 'url_route': {'args': (), 'kwargs': {'q': '12'}}}
 
 
 
-def vote_operation(vote_author:str,message_id:int,vote_type:str,room_id:int,status:str):
-    try:
-        user=User.objects.get(username=vote_author)
-        room=Room.objects.get(id=room_id)
-        msg=Message.objects.get(id=message_id)
-        # print(f"✅✅status:{status}")
-        if status=="subtractVote":
-            vote=Vote.objects.get(user__username=user.username,room__name=room.name,message__id=msg.id)
-            vote.delete()
-            # print("❌deleted vote")
-            return True
-        else:
-            vote_choice=1
-            if vote_type=="downvote":
-                vote_choice=-1
-            vote=Vote.objects.create(user=user,message=msg,room=room,vote=vote_choice)
-            # print("✅added vote")
-            return True
-    except Exception as e:
-        logger.error(f"Error in vote operation:{e}")
-        return False
 
-def maintain_user_visibility(username:str,flag:bool):
-    """
-    sets is_online in userProfile model
-    """
-    from base.services.user_services import set_user_online_status
-    set_user_online_status(username, flag)
-
-
-def get_room_name(room_id:int):
-    room=Room.objects.get(id=room_id)
-    return room.name
-
-
-
-
-def saveToDb(room_id:int,username:str,message:str,parent:int=None):
-    "message to db"
-    try:
-        room=Room.objects.get(id=room_id)
-        author=User.objects.get(username=username)
-
-        msg=Message.objects.create(room=room,author=author,message=message)
-        if parent is not None:
-            parent_msg=Message.objects.get(id=parent)
-            msg.parent=parent_msg
-        
-        msg.save()
-        return msg.id
-    except Exception as e:
-        logger.error(f"MESSAGE NOT SAVED,error:{str(e)}")
-
-def savePolltoDb(room_id:int,username:str,message:str,parent:int=None):
-    try:
-        room=Room.objects.get(id=room_id)
-        author=User.objects.get(username=username)
-        
-        msg=Message.objects.create(room=room,author=author,message="")
-        if parent is not None:
-            parent_msg=Message.objects.get(id=parent)
-            msg.parent=parent_msg
-
-        msg.save()
-
-        poll_det=json.loads(message)
-        new_poll=Poll.objects.create(message=msg)
-        new_poll.question=poll_det["question"]
-        new_poll.choices=poll_det={"choices":poll_det["choices"]}
-        new_poll.save()
-        return msg.id
-    except Exception as e:
-        logger.error(f"POLL NOT SAVED,error:{str(e)}")
-
-
-
-maintain_user_visibility=database_sync_to_async(maintain_user_visibility)
-get_room_name=database_sync_to_async(get_room_name)
-saveToDb=database_sync_to_async(saveToDb)
-vote_operation=database_sync_to_async(vote_operation)
+maintain_user_visibility_fn=database_sync_to_async(set_user_online_status)
+get_room_name_fn=database_sync_to_async(get_room_name)
+save_message_fn=database_sync_to_async(saveMessage)
+vote_operation_fn=database_sync_to_async(vote_operation)
+save_poll_fn=database_sync_to_async(savePoll)
 
 
 
@@ -123,7 +51,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
             # p(f"user:{self.scope["username"]}")
             self.room_id = self.scope["url_route"]["kwargs"]["q"]
-            self.room_name = await get_room_name(int(self.room_id))
+            self.room_name = await get_room_name_fn(int(self.room_id))
             self.room_group = f"room_{self.room_id}"
 
             await self.channel_layer.group_add(
@@ -145,7 +73,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             )
 
             # print(f"✅ Connected: {self.channel_name} joined {self.room_group}")
-            await maintain_user_visibility(username=self.scope["username"],flag=True)
+            await maintain_user_visibility_fn(self.scope["username"],True)
         except Exception as e:
             logger.error(f"Error in connect: {e}")
 
@@ -161,7 +89,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             if "task" in data and data["task"]=="vote":
                 if data["status"]=="subtractVote":
 
-                    operation_done=await vote_operation(data["vote_author"],data["message_id"],data["vote_type"],self.room_id,data["status"])
+                    operation_done=await vote_operation_fn(data["vote_author"],data["message_id"],data["vote_type"],self.room_id,data["status"])
 
                     await self.channel_layer.group_send(
                         self.room_group,
@@ -179,7 +107,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
 
                 elif data["status"]=="addVote":
                     
-                    operation_done=await vote_operation(data["vote_author"],data["message_id"],data["vote_type"],self.room_id,data["status"])
+                    operation_done=await vote_operation_fn(data["vote_author"],data["message_id"],data["vote_type"],self.room_id,data["status"])
 
                     await self.channel_layer.group_send(
                         self.room_group,
@@ -201,12 +129,12 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                     room_id=int(self.scope["url_route"]["kwargs"]["q"])
                     username=self.scope["username"]
             
-                    message_id=await savePolltoDb(room_id=room_id,username=username,message=data["message"],parent=data["parent"])
+                    message_id=await save_poll_fn(room_id=room_id,username=username,message=data["message"],parent=data["parent"])
                 else:
                     room_id=int(self.scope["url_route"]["kwargs"]["q"])
                     username=self.scope["username"]
                     ###no reactions,no parents
-                    message_id=await saveToDb(room_id=room_id,username=username,message=data["message"],parent=data["parent"])
+                    message_id=await save_message_fn(room_id=room_id,username=username,message=data["message"],parent=data["parent"])
                     
                 await self.channel_layer.group_send(
                     self.room_group,
@@ -229,7 +157,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
                 room_id=int(self.scope["url_route"]["kwargs"]["q"])
                 username=self.scope["username"]
                 ###no reactions,no parents
-                message_id=await saveToDb(room_id=room_id,username=username,message=data["message"],parent=data["parent"])
+                message_id=await save_message_fn(room_id=room_id,username=username,message=data["message"],parent=data["parent"])
 
 
                 await self.channel_layer.group_send(
@@ -254,7 +182,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
     async def disconnect(self, close_code):
         try:
             if self.scope["username"] is not None:
-                await maintain_user_visibility(username=self.scope["username"],flag=False)
+                await maintain_user_visibility_fn(self.scope["username"],False)
 
                 await self.channel_layer.group_send(
                     self.room_group,
