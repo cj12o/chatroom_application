@@ -10,6 +10,7 @@ from ..serializers.message_serializer import MessageSerializerForCreation,Messag
 from ..models.message_model import Message
 from ..models.room_model import Room
 from ..logger import logger
+from ..services.user_services import build_absolute_media_url
 from channels.layers import get_channel_layer
 from ..threadPool import ThreadPoolManager
 import asyncio
@@ -29,16 +30,10 @@ def helper(id:int,lst:list)->list:
         logger.error(e)
 
 
-def _build_absolute_media_url(resource):
-    if not resource:
-        return None
-    return f"{settings.SITE_BASE_URL}{resource.url}"
-
-
 async def sendToWs(room_id:int,message:str,username:str,message_id:int,file_url,image_url):
     channel_layer=get_channel_layer()
-    file_path=_build_absolute_media_url(file_url)
-    image_path=_build_absolute_media_url(image_url)
+    file_path=build_absolute_media_url(file_url)
+    image_path=build_absolute_media_url(image_url)
     if file_url and image_url:
         await channel_layer.group_send(
             f"room_{room_id}",
@@ -138,7 +133,7 @@ class MessageApiview(APIView):
             return Response({"message": "posted msg"}, status=status.HTTP_200_OK)
 
         except Exception as e:
-            print(f"Error in posting message: {e}")
+            logger.error(f"Error in posting message: {e}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def get(self,request,pk):

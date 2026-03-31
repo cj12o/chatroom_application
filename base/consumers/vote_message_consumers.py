@@ -38,9 +38,8 @@ def maintain_user_visibility(username:str,flag:bool):
     """
     sets is_online in userProfile model
     """
-    user=UserProfile.objects.get(user__username=username)
-    user.is_online=flag
-    user.save()
+    from base.services.user_services import set_user_online_status
+    set_user_online_status(username, flag)
 
 
 def get_room_name(room_id:int):

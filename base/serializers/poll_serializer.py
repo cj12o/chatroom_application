@@ -1,21 +1,22 @@
 from rest_framework import serializers
 from ..models.poll_model import Poll,PollVote
-from django.conf import settings
+from ..services.user_services import build_profile_pic_url
 
 
 class PollSerializer(serializers.ModelSerializer):
-    
+
     author=serializers.SerializerMethodField()
     choices=serializers.SerializerMethodField()
     class Meta:
         model=Poll
         fields="__all__"
-    
+
     def get_author(self,obj):
         try:
             dct={"username":obj.author.username}
-            if obj.author.profile.profile_pic:
-                dct["profile_pic"]=f"{settings.SITE_BASE_URL}{obj.author.profile.profile_pic.url}"
+            pic_url = build_profile_pic_url(obj.author.profile)
+            if pic_url:
+                dct["profile_pic"] = pic_url
             return dct
         except Exception as e:
             return None

@@ -2,7 +2,7 @@ from rest_framework import serializers
 from ..models.userprofile_model import UserProfile
 from ..models.room_model import Room
 from ..models.message_model import User
-from django.conf import settings
+from ..services.user_services import build_profile_pic_url
 from ..logger import logger
 
 
@@ -14,9 +14,7 @@ class UserProfSerializer(serializers.ModelSerializer):
         fields='__all__'
 
     def get_profile_pic(self,obj):
-        if obj.profile_pic:
-            return f"{settings.SITE_BASE_URL}{obj.profile_pic.url}"
-        return None
+        return build_profile_pic_url(obj)
 
     def create(self, validated_data):
         #calls just normal create from parent class

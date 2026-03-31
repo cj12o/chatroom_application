@@ -11,7 +11,7 @@ from django.conf import settings
 
 from ..models.userprofile_model import User
 from ..serializers.user_serializer import UserSerializer,AdminLoginSerializer,SignupSerializer
-
+from ..services.user_services import build_profile_pic_url
 
 from ..threadPool import ThreadPoolManager
 from ..views.history_views import setHistory
@@ -26,9 +26,7 @@ class LoginApiview(APIView):
             user=User.objects.get(Q(email=data["email"]))
             token,created=Token.objects.get_or_create(user=user) 
             
-            profile_pic=None
-            if user.profile.profile_pic:
-                profile_pic=f"{settings.SITE_BASE_URL}{user.profile.profile_pic.url}"
+            profile_pic=build_profile_pic_url(user.profile)
             
             return Response({
             "userdata":serializer.data,

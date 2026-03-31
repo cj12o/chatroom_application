@@ -8,6 +8,7 @@ from ..models.join_request_model import JoinRequest, RequestStatus
 from ..views.topic_filter import topicsList
 from ..logger import logger
 from ..models.Room_Moderation_model import ModerationType
+from ..services.user_services import build_profile_pic_url
 from django.conf import settings
 import os
 
@@ -41,10 +42,9 @@ class RoomSerializerForPagination(serializers.ModelSerializer):
             for member in members:
                 dct={}
                 dct["member_id"]=member.id
-                dct["profile_image"]=f"{settings.SITE_BASE_URL}{member.profile.profile_pic.url}" if member.profile.profile_pic else None
+                dct["profile_image"]=build_profile_pic_url(member.profile)
                 lst.append(dct)
 
-            print(f"😀😀lst{lst}")
             return lst
         except User.DoesNotExist:
             logger.error("ERROR in getting members NOT exists")
@@ -143,7 +143,7 @@ class RoomSerializer(serializers.ModelSerializer):
                 dct["member_id"]=member.id
                 dct["member_name"]=member.username
                 dct["status"]=member.profile.is_online
-                dct["profile_image"]=f"{settings.SITE_BASE_URL}{member.profile.profile_pic.url}" if member.profile.profile_pic else None
+                dct["profile_image"]=build_profile_pic_url(member.profile)
                 lst.append(dct)
 
             return lst

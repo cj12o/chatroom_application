@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from ..models.message_model import Message,Vote
 from django.db.models import Q
-from django.conf import settings
+from ..services.user_services import build_absolute_media_url, build_profile_pic_url
 from ..logger import logger
 
 class MessageSerializerForCreation(serializers.Serializer):
@@ -37,18 +37,10 @@ class MessageSerializerForCreation(serializers.Serializer):
         return obj.room.name
     
     def get_images_msg(self,obj):
-        try:
-            return f"{settings.SITE_BASE_URL}{obj.images_msg.url}"
-        except Exception:
-            # print(f"Error in image {e}")
-            return None
-        
-    
+        return build_absolute_media_url(obj.images_msg)
+
     def get_file_msg(self,obj):
-        try:
-            return f"{settings.SITE_BASE_URL}{obj.file_msg.url}"
-        except Exception:
-            return None
+        return build_absolute_media_url(obj.file_msg)
     
     def get_children(self,obj):
         # try:
@@ -87,8 +79,7 @@ class MessageSerializerForCreation(serializers.Serializer):
 
     def get_profile_pic(self,obj):
         try:
-            if obj.author.profile and obj.author.profile.profile_pic:
-                return f"{settings.SITE_BASE_URL}{obj.author.profile.profile_pic.url}"
+            return build_profile_pic_url(obj.author.profile)
         except Exception:
             return None
 
@@ -137,16 +128,7 @@ class MessageSerializerForModeration(serializers.Serializer):
             return None
         
     def get_images_msg(self,obj):
-        try:
-            return f"{settings.SITE_BASE_URL}{obj.images_msg.url}"
-        except Exception as e:
-            logger.error(e)
-            return None
-        
-    
+        return build_absolute_media_url(obj.images_msg)
+
     def get_file_msg(self,obj):
-        try:
-            return f"{settings.SITE_BASE_URL}{obj.file_msg.url}"
-        except Exception as e:
-            logger.error(e)
-            return None
+        return build_absolute_media_url(obj.file_msg)

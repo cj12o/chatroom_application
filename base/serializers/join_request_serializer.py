@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from ..models.join_request_model import JoinRequest
 from ..models.userprofile_model import User
+from ..services.user_services import build_profile_pic_url
 
 class JoinRequestSerializer(serializers.ModelSerializer):
     user_name = serializers.SerializerMethodField()
@@ -19,7 +20,6 @@ class JoinRequestSerializer(serializers.ModelSerializer):
         return obj.room.name
     
     def get_user_profile_pic(self, obj):
-        if hasattr(obj.user, 'profile') and obj.user.profile.profile_pic:
-            from django.conf import settings
-            return f"{settings.SITE_BASE_URL}{obj.user.profile.profile_pic.url}"
+        if hasattr(obj.user, 'profile'):
+            return build_profile_pic_url(obj.user.profile)
         return None

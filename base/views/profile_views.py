@@ -10,7 +10,7 @@ from ..serializers.userprof_serializer import UserProfSerializer,RoomsCreatedSer
 from ..models.userprofile_model import UserProfile
 from ..models.room_model import Room
 from ..logger import logger
-from django.conf import settings
+from ..services.user_services import build_profile_pic_url
 
 class UserProfileApiview(APIView):
 
@@ -112,9 +112,7 @@ class UserProfileApiview(APIView):
             serializer=UserProfSerializer(context={'request':request},data=request.data,partial=True,instance=profile)
             
             
-            profile_pic=""
-            if profile.profile_pic: 
-                profile_pic=f"{settings.SITE_BASE_URL}{profile.profile_pic.url}"
+            profile_pic=build_profile_pic_url(profile) or ""
             
             if serializer.is_valid():
                 serializer.save()
