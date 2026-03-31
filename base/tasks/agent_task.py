@@ -13,7 +13,7 @@ from channels.layers import get_channel_layer
 from django.conf import settings
 
 llm=ChatOpenAI(
-    base_url=settings.LLM_BASE_URL,
+    # base_url=settings.LLM_BASE_URL,
     model=settings.LLM_MODEL_NAME,
     api_key=settings.LLM_API_KEY
 )
@@ -50,7 +50,7 @@ def pollGenerator():
     
     Output must be in this JSON format only:
     {{
-        "question":"poll title ",
+        "question":"poll title ", 1
         "options":[choice 1,choice 2]
     }}
 

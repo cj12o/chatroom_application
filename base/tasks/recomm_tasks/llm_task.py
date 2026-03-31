@@ -15,7 +15,7 @@ class RespFormat(BaseModel):
     recommendation:List[RoomFormat]
 
 llm=ChatOpenAI(
-    base_url=settings.LLM_BASE_URL,
+    # base_url=settings.LLM_BASE_URL,
     model=settings.LLM_MODEL_NAME,
     api_key=settings.LLM_API_KEY,
     streaming=True,
@@ -52,7 +52,7 @@ def Recommend(room_list:list,user_history:list):
         from base.logger import logger
 
         room_str="\n".join(f"room_description: \n {dct['document']}" for dct in room_list)
-        user_hist_str="\n".join(f"room_id:{dct["id"]} room_name:{dct["name"]} room_description:{dct["description"]}" for dct in user_history)
+        user_hist_str="\n".join(f"room_id:{dct['id']} room_name:{dct['name']} room_description:{dct['description']}" for dct in user_history)
         
         prompt = template.format_messages(
             room_lst=room_str,

@@ -12,7 +12,7 @@ class RespFormat(BaseModel):
     recommendation:List[RoomFormat]
 
 llm=ChatOpenAI(
-    base_url=settings.LLM_BASE_URL,
+    # base_url=settings.LLM_BASE_URL,
     model=settings.LLM_MODEL_NAME,
     api_key=settings.LLM_API_KEY,
     streaming=True,

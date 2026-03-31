@@ -104,7 +104,7 @@ class LlmConsumer(AsyncWebsocketConsumer):
 
         # resp = await loop.run_in_executor(None, lambda: llm.stream(text_data))
 
-        resp=await loop.run_in_executor(None,lambda:llm.stream([SystemMessage(content=f"Greet the user using their name, username:{self.scope["username"]} ")]))
+        resp=await loop.run_in_executor(None,lambda:llm.stream([SystemMessage(content=f"Greet the user using their name, username:{self.scope['username']} ")]))
         
         for token in resp:
             await self.send(text_data=json.dumps({"token": token.content,"id":str(unique_id),"status":"firstMsg"}))

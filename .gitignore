@@ -6,3 +6,4 @@ celerybeat-schedule-shm
 celerybeat-schedule-wal
 migrations
 logs 
+*venv

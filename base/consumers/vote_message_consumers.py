@@ -116,7 +116,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
         try:
             await self.accept()
-            print(f"User:{self.scope["username"]}")
+            print(f"User:{self.scope['username']}")
             # print(f"🗼🗼SCOPE:{self.scope}")
             if self.scope["username"] is None:
                 await self.close()

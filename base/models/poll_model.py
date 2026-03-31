@@ -32,18 +32,18 @@ async def connectTows(agent_msg:dict,message_id:int,poll_id:int):
         channel_layer=get_channel_layer() 
         
         await channel_layer.group_send(
-            f"room_{agent_msg["room_id"]}",
+            f"room_{agent_msg['room_id']}",
             {
                 "type":"chat_message",
-                "tool_called":agent_msg["tool_called"],
+                "tool_called":agent_msg['tool_called'],
                 "task":"AgentActivity",
                 # "message":agent_msg["message"],
-                "question":agent_msg["message"]["question"],
-                "choices":agent_msg["message"]["options"],
+                "question":agent_msg['message']['question'],
+                "choices":agent_msg['message']['options'],
                 "parent":None,
                 "username":"Agent",
                 "message_id":message_id,
-                "room_id":agent_msg["room_id"],
+                "room_id":agent_msg['room_id'],
                 "poll_id":poll_id
                 # "status": True
             }

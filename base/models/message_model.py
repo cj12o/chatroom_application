@@ -88,7 +88,7 @@ def send_modded_message(sender,created,instance,**kwargs):
         if not created or instance.is_moderated:
             return
         reddis.incr(name="unmodded",amount=1)
-        print(f"Message count:{reddis.get("unmodded")}")
+        print(f"Message count:{reddis.get('unmodded')}")
         
         if int(reddis.get("unmodded"))>=K:
             start_moderation.delay()

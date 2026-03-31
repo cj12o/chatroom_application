@@ -97,7 +97,7 @@ class UserApiview(APIView):
     #get all users or login/?name=xxxx
     def get(self,request):
         
-        print(f"{request.GET.get("name")}")
+        print(f"{request.GET.get('name')}")
         qs=User.objects.all()
 
         if request.GET.get("name"):

@@ -7,7 +7,7 @@ from langchain.messages import SystemMessage
 load_dotenv()
 
 llm=ChatOpenAI(
-    base_url=settings.LLM_BASE_URL,
+    # base_url=settings.LLM_BASE_URL,
     model=settings.LLM_MODEL_NAME,
     api_key=settings.LLM_API_KEY
 )
@@ -28,7 +28,7 @@ def add_summerize_task(json_msg:dict):
         step 1) get file path from db
         2) 
         """
-        logger.info(f"Summerization task started for room_id:{json_msg["room_id"]}")
+        logger.info(f"Summerization task started for room_id:{json_msg['room_id']}")
         room_id=int(json_msg["room_id"])
         corpus=""
         file_path=ChatFileLog.get_file(room_id)

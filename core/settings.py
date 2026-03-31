@@ -38,11 +38,14 @@ SECRET_KEY = get_env_setting("DJANGO_SECRET_KEY", required=True)
 DEBUG = get_env_setting("DJANGO_DEBUG", "True").lower() in ("true", "1", "yes", "on")
 
 ALLOWED_HOSTS = [
-    host.strip()
-    for host in get_env_setting("DJANGO_ALLOWED_HOSTS", "").split(",")
-    if host.strip()
+    # host.strip()
+    # for host in get_env_setting("DJANGO_ALLOWED_HOSTS", "").split(",")
+    # if host.strip()
+    ".railway.app"
 ]
 
+if DEBUG:
+    ALLOWED_HOSTS.extend(["localhost", "127.0.0.1"])
 
 # Application definition
 
@@ -161,7 +164,8 @@ STATICFILES_DIRS=(BASE_DIR/'static',)
 #     "http://localhost:5137"
 # ]
 
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOWED_ORIGINS = get_env_setting("DJANGO_CORS_ALLOWED_ORIGINS", "http://localhost:5173").split(",")
 CORS_ALLOW_CREDENTIALS = True
 
 
@@ -192,8 +196,8 @@ REST_FRAMEWORK = {
 }
 
 SITE_BASE_URL = get_env_setting("SITE_BASE_URL")
-LLM_BASE_URL = get_env_setting("LLM_BASE_URL", "http://127.0.0.1:1239/v1/")
-LLM_MODEL_NAME = get_env_setting("LLM_MODEL_NAME", "hermes-3-llama-3.2-3b")
-LLM_API_KEY = get_env_setting("LLM_API_KEY", "lm_studio")
+# LLM_BASE_URL = get_env_setting("LLM_BASE_URL", "http://127.0.0.1:1239/v1/")
+LLM_MODEL_NAME = get_env_setting("LLM_MODEL_NAME", "gpt-3.5-turbo")
+LLM_API_KEY = get_env_setting("LLM_API_KEY")
 CHROMA_HOST = get_env_setting("CHROMA_HOST", "localhost")
 CHROMA_PORT = int(get_env_setting("CHROMA_PORT", "3000"))

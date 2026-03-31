@@ -35,7 +35,7 @@ class TokenAuthChannelMiddleware(BaseMiddleware):
 
             scope["username"]=user_data[0]
             scope["user_id"]=user_data[1]
-            print(f"👤👤User:{scope["username"]}")
+            print(f"👤👤User:{scope['username']}")
             return await super().__call__(scope,receive,send)
     
         except Exception as e:

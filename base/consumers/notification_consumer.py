@@ -14,7 +14,7 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
             return
 
         print("✅✅Notification channel connected")
-        self.group_name=f"Notification_channel_{self.scope["user_id"]}"
+        self.group_name=f"Notification_channel_{self.scope['user_id']}"
        
         await self.channel_layer.group_add(
             self.group_name,
