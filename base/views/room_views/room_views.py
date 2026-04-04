@@ -5,14 +5,13 @@ from rest_framework import status
 from django.db.models import Q
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
+from rest_framework.pagination import PageNumberPagination
 
 from base.models import Room
 from ...serializers.room_serializer import RoomSerializer,RoomSerializerForPagination,RoomSerializerForCreation
 from ...services.room_services import get_room_queryset, get_online_users
+from ...services import chroma_services
 from ...logger import logger
-# from .userRecommendation.chroma import getRecommendation
-
-from rest_framework.pagination import PageNumberPagination
 
 class LargeResultsSetPagination(PageNumberPagination):
     page_size = 10
@@ -149,7 +148,8 @@ class RoomApiview(APIView):
             serializer=RoomSerializerForCreation(data=data,instance=room,partial=True)
 
             if serializer.is_valid():
-                serializer.save()
+                updated_room=serializer.save()
+                chroma_services.update_room(updated_room)
                 return Response({
                     "message":"Room updated"
                 },status=status.HTTP_200_OK)
@@ -171,7 +171,8 @@ class RoomApiview(APIView):
             })
             if serializer.is_valid():
                 room=serializer.save()
-                
+                chroma_services.add_room(room)
+
             return Response({
                 "msg":"room done"
             },status=status.HTTP_200_OK)
@@ -187,7 +188,9 @@ class RoomApiview(APIView):
         data=request.data
         room=Room.objects.get(Q(author__username=request.user)&Q(id=data["id"]))
         if room:
+            room_id=room.id
             room.delete()
+            chroma_services.delete_room(room_id)
             return Response({
                 "message":"Room deleted"
             },status=status.HTTP_200_OK)

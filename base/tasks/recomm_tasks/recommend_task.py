@@ -1,6 +1,6 @@
 from django.db.models import Q
-import chromadb
-from django.conf import settings
+
+from base.services import chroma_services
 
 
 def HistList(username:str,x:int,k:int)->dict:
@@ -58,41 +58,38 @@ def getCosinSimRooms(user_history_dict:dict)->list:
     try:
         from base.models import Room
 
-        chroma_client =chromadb.HttpClient(
-            host=settings.CHROMA_HOST,
-            port=settings.CHROMA_PORT,
-        )
-        collection=chroma_client.get_or_create_collection("all_rooms_data")
-        
+        collection=chroma_services.get_collection()
+
         res_lst=[]
         for k,v in user_history_dict.items():
             for r_id,_ in v.items():
                 print(f"COSINE SIM :{r_id}")
-                room=Room.objects.get(id=r_id)
-                
+                try:
+                    room=Room.objects.get(id=r_id)
+                except Room.DoesNotExist:
+                    print(f"Skipping room {r_id}: no longer exists")
+                    continue
+
                 query_doc=f"""
                     name:{room.name}
                     description:{room.description}
                     tags:{room.tags}
                     topic:{room.topic}
                     parent_topic:{room.parent_topic.topic}
-                """ 
-                
-                results =collection.query(
-                    query_texts=[query_doc], 
-                    n_results= 6 if collection.count()>6 else collection.count()
-                )
+                """
+
+                n = min(6, collection.count())
+                results = chroma_services.query_rooms(query_doc, n_results=n)
 
                 print(f"coolection count:{collection.count()}")
 
-                # for result in results:
                 metadata=results["metadatas"][0]
                 documents=results["documents"][0]
-                
+
                 for i in range(0,len(metadata)):
                     dct={"id":int(metadata[i]["room_id"]),"name":metadata[i]["room_name"],"document":documents[i]}
                     res_lst.append(dct)
-        
+
         return res_lst
     except Exception as e:
         print(f"ERROR in getCosinSimRooms:{str(e)}")
