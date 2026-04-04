@@ -1,5 +1,5 @@
 from celery import shared_task
-from langchain_openai import ChatOpenAI
+from base.services.llm_services import get_model
 from langchain.tools import tool
 from typing import TypedDict,Annotated,Literal
 from langchain.messages import AnyMessage,SystemMessage,ToolMessage,HumanMessage
@@ -12,15 +12,7 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.conf import settings
 
-llm=ChatOpenAI(
-    # base_url=settings.LLM_BASE_URL,
-    model=settings.LLM_MODEL_NAME,
-    api_key=settings.LLM_API_KEY
-)
-
-# ------------------------------------------AGENT------------------------------------------------
-
-
+llm=get_model("gpt-4o-mini")
 
 class MessagesState(TypedDict):
     messages:Annotated[list[AnyMessage],operator.add]
@@ -29,7 +21,6 @@ class MessagesState(TypedDict):
 class Context(TypedDict):
     room_name:str
     room_description:str
-    #chats
 
 context:Context={}
 

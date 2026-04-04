@@ -1,12 +1,8 @@
 from celery import shared_task
 from django.db.models import Q
 from asgiref.sync import async_to_sync
-from redis import Redis
-
-
-reddis=Redis(host='localhost', port=6379)
-K=10
-
+from django.conf import settings
+from base.logger import logger
 
 
 async def connectToWs(*args)->None:
@@ -33,7 +29,7 @@ async def connectToWs(*args)->None:
 
 
 """setuped to run every k minutes"""
-def moderate(corpus:list[tuple[int,str]])->list[int]:
+def moderate(corpus:list[tuple[int,str]]):
     """model prediction gets returned"""
     try:
         from base.logger import logger
@@ -47,15 +43,15 @@ def moderate(corpus:list[tuple[int,str]])->list[int]:
             results_vec[id]=result
         
 
-        results_to_send=[] #"ids that are toxic
+        results_to_send={"toxic":[],"not_toxic":[]} 
         for k,v in results_vec.items():
             if v==0:
                 "case : non-toxic"
-                continue
-
+                results_to_send["not_toxic"].append(k)
             else:
                 "case : toxic"
-                results_to_send.append(k)
+                results_to_send["toxic"].append(k)
+
         print(f"✅✅Results from model:{results_to_send}")
         return results_to_send
 
@@ -66,12 +62,13 @@ def moderate(corpus:list[tuple[int,str]])->list[int]:
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def start_moderation(self):
+def start_moderation():
     "start moderation "
     from base.models import Message
     from base.logger import logger
     from base.models.Room_Moderation_model import ModerationType
     from base.tasks import add_summerize_task
+    from base.models import MessageSummerizedStatus
     try:
         
         qs = (
@@ -91,12 +88,22 @@ def start_moderation(self):
         print(f"Corpus:{corpus}")
         
         try:
-            toxic_ids = moderate(corpus)
+            result = moderate(corpus)
+            if not result or "toxic" not in result or "not_toxic" not in result:
+                logger.info("Error in model prediction")
+                return
+            
+            toxic_ids=result.get("toxic")
+            
+                
         except Exception as model_error:
             logger.error(f"ML model error: {str(model_error)}")
+            return
 
     
         replaced_msg = "Removed by Automatic room moderation, message was found to be against guidlines."
+
+        
 
         for msg_id in toxic_ids:
             msg = Message.objects.get(id=msg_id)
@@ -105,9 +112,6 @@ def start_moderation(self):
             username = msg.author.username
             room_id = msg.room.id
 
-
-
-    
             if msg.room.room_moderation_type.moderation_type==ModerationType.Auto:
                 Message.objects.filter(id=msg_id).update(message=replaced_msg, is_moderated=True,is_unsafe=True)
 
@@ -118,23 +122,27 @@ def start_moderation(self):
                     msg_id,           # message_id
                     room_id,          # room_id
                 )
-                #only for auto  mod 
-                key=f"room_{room_id}_mod_count"
-                current_count=reddis.incr(key,amount=1)
-
-                if current_count>=K:
-                    add_summerize_task.delay({"room_id":msg.room.id})
-                    reddis.set(name=key,value=0)
-
+                
             elif msg.room.room_moderation_type.moderation_type==ModerationType.SemiAuto:
                 Message.objects.filter(id=msg_id).update(is_semi_moderated=True,is_flaged_as_unsafe=True)
-                
 
         msg_ids=[msg_id for msg_id,_ in corpus if msg_id not in toxic_ids]
-        
+
         Message.objects.filter(id__in=msg_ids).update(is_moderated=True)
-            
+
         logger.info(f"Moderated {len(toxic_ids)} toxic messages and {len(msg_ids)} safe messages.")
+
+    # one DB check per room after the entire batch
+        rooms_to_check=result["not_toxic"]
+        rooms_to_check.extend(result["toxic"])
+
+        print(f"Rooms to check:{rooms_to_check}")
+        for room_id in rooms_to_check:
+            unsummarized=MessageSummerizedStatus.objects.filter(Q(room__id=room_id)&Q(status=False)).count()
+            print(f"Unsummarized_count:{unsummarized}")
+            if unsummarized>=settings.SUMMERIZATION_BATCH_SIZE:
+                add_summerize_task.delay({"room_id":room_id})
+
 
     except Exception as e:
         logger.error(f"ERROR in start_moderation: {str(e)}")

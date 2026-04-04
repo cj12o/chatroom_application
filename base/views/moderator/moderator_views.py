@@ -11,6 +11,7 @@ from ...logger import logger
 from ...serializers.room_serializer import RoomSerializerForModeration
 from ...models.Room_Moderation_model import ModerationType
 from ...tasks import add_summerize_task
+
 class ModerationMessageApiview(APIView):
 
     permission_classes=[IsAuthenticated]

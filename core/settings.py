@@ -176,11 +176,10 @@ REDIS_URL = get_env_setting("REDIS_URL", f"redis://{REDIS_HOST}:{REDIS_PORT}/0")
 
 CHANNEL_LAYERS = {
     "default": {
-        # "BACKEND": "channels_redis.core.RedisChannelLayer",
-        # "CONFIG": {
-        #     "hosts": [REDIS_URL],
-        # },
-        "BACKEND": "channels.layers.InMemoryChannelLayer",
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [REDIS_URL],
+        },
     }
 }
 
@@ -203,3 +202,9 @@ LLM_MODEL_NAME = get_env_setting("LLM_MODEL_NAME", "gpt-3.5-turbo")
 LLM_API_KEY = get_env_setting("LLM_API_KEY")
 CHROMA_HOST = get_env_setting("CHROMA_HOST", "localhost")
 CHROMA_PORT = int(get_env_setting("CHROMA_PORT", "3000"))
+
+LLM_MODEL_SUMMERIZATION=get_env_setting("LLM_MODEL_SUMMERIZATION")
+SUMMERIZATION_BATCH_SIZE=10
+OPENAI_API_KEY = get_env_setting("OPENAI_API_KEY")
+
+OPENAI_MODEL_RECOMMENDATION="gpt-4o-mini"

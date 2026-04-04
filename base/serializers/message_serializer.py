@@ -1,7 +1,7 @@
 from rest_framework import serializers
-from ..models.message_model import Message,Vote
-from django.db.models import Q
+from ..models.message_model import Message
 from ..services.user_services import build_absolute_media_url, build_profile_pic_url
+from ..services.vote_service import get_vote_counts
 from ..logger import logger
 
 class MessageSerializerForCreation(serializers.Serializer):
@@ -55,19 +55,15 @@ class MessageSerializerForCreation(serializers.Serializer):
         
     def get_upvotes(self,obj):
         try:
-            votes=Vote.objects.filter(Q(message__id=obj.id))
-            self.context["downvotes"]=len(votes.filter(Q(vote=-1)))
-            return len(votes.filter(Q(vote=1)))
+            counts = get_vote_counts(obj.id)
+            self._cached_downvotes = counts["downvotes"]
+            return counts["upvotes"]
         except Exception as e:
             logger.error(e)
             return 0
-    
+
     def get_downvotes(self,obj):
-        try:
-            return self.context["downvotes"]
-        except Exception as e:
-            logger.error(e)
-            return 0
+        return getattr(self, '_cached_downvotes', 0)
     
     def get_hasPoll(self,obj):
         if obj.poll_set.exists(): 

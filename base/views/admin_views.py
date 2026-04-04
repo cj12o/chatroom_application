@@ -52,9 +52,9 @@ class LogoutApiview(APIView):
             
             if request.user.is_authenticated:
                 data=request.data
-                executor=ThreadPoolManager.get()
-                executor.submit(setHistory,data,request.user)
-
+                # executor=ThreadPoolManager.get()
+                # executor.submit(setHistory,data,request.user)
+                setHistory(data,request.user)
                 request.user.auth_token.delete()    
                 
                 return Response({

@@ -7,3 +7,6 @@ class BaseConfig(AppConfig):
 
     # def ready(self):
     #     from base.tasks.moderation_task import load_model          
+
+    def ready(self):
+        import base.signals   # ✅ REQUIRED

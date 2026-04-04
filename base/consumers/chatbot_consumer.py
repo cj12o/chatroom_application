@@ -1,5 +1,5 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
-from base.views.userRecommendation.llm import llm
+from base.services.llm_services import get_model
 import asyncio
 import json
 import uuid
@@ -7,8 +7,6 @@ from base.models.room_model import Room
 from langchain.messages import SystemMessage,HumanMessage
 from asgiref.sync import sync_to_async
 from base.services.room_services import get_room_name
-#diff thread pool
-# createDoc=sync_to_async(createDoc,thread_sensitive=False)
 from ..logger import logger
 
 SYSTEM_PROMPT=""
@@ -17,18 +15,15 @@ HUMAN_PROMPT=""
 def contextGiver(room_id:int,username:str)->None:
     try:
         from base.logger import logger
+        from base.models import ChatFileLog
         """
-        gives context to chatbot 
+        gives context to chatbot
         """
         global SYSTEM_PROMPT,HUMAN_PROMPT
 
         room=Room.objects.get(id=room_id)
-        
-        location =room.chatfilelog.fileLocation.path
-        file_content=""
-        
-        with open(str(location),"r") as f:
-            file_content=f.read()
+
+        file_content=ChatFileLog.get_summary(room_id)
         
         system_prompt=f"""
         Role:You are a chat room chatbot
@@ -102,10 +97,11 @@ class LlmConsumer(AsyncWebsocketConsumer):
         
 
         # resp = await loop.run_in_executor(None, lambda: llm.stream(text_data))
-
+        llm=get_model("gpt-3.5-turbo")
         resp=await loop.run_in_executor(None,lambda:llm.stream([SystemMessage(content=f"Greet the user using their name, username:{self.scope['username']} ")]))
         
         for token in resp:
+            print(f"Token:{token}")
             await self.send(text_data=json.dumps({"token": token.content,"id":str(unique_id),"status":"firstMsg"}))
 
             await asyncio.sleep(0.01)

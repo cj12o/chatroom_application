@@ -4,7 +4,6 @@ from django.db  import transaction
 
 
 from celery import shared_task
-from langchain_openai import ChatOpenAI
 import os
 from dotenv import load_dotenv
 

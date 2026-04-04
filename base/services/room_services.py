@@ -6,7 +6,8 @@ from base.logger import logger
 from base.models import Room, UserProfile, RoomModerationType, Topic
 from base.models.Room_Moderation_model import ModerationType
 from base.services.user_services import build_profile_pic_url
-from base.views.topic_filter import topicsList
+from base.services.topic_filter import topicsList
+
 
 
 

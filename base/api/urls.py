@@ -24,6 +24,7 @@ from ..views import stats_views as st_v
 from ..views import join_request_views as jrv
 
 from ..views import test as t
+from ..views import health_views as hv
 
 
 
@@ -91,6 +92,9 @@ urlpatterns=[
     path("join-request/create/", jrv.RequestJoinView.as_view()),
     path("join-request/list/", jrv.ListJoinRequestsView.as_view()),
     path("join-request/manage/", jrv.ManageJoinRequestView.as_view()),
+
+    # Health checks
+    path("health/chroma/", hv.chroma_health),
 ]
 
 

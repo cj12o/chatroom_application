@@ -1,7 +1,8 @@
-from langchain_openai import ChatOpenAI
 from pydantic import BaseModel,Field
 from typing import List
 from django.conf import settings
+from base.services.llm_services import get_model_with_structed_output
+from base.services.prompt_services import get_prompt
 
 class RoomFormat(BaseModel):
     room_name:str=Field(description="room_name")
@@ -11,59 +12,35 @@ class RoomFormat(BaseModel):
 class RespFormat(BaseModel):
     recommendation:List[RoomFormat]
 
-llm=ChatOpenAI(
-    # base_url=settings.LLM_BASE_URL,
-    model=settings.LLM_MODEL_NAME,
-    api_key=settings.LLM_API_KEY,
-    streaming=True,
-)
-
-
-# llm_structured_op=llm.with_structured_output(RespFormat)
-
-# template = ChatPromptTemplate.from_messages([
-#     ("system", """
-# Role: You are a chatroom recommender.
-
-# Available rooms (List_of_rooms): {room_lst}
-# User history: {user_history_lst}
-     
-
-# Rules:
-# 1) Only pick rooms from List_of_rooms. Do NOT invent new rooms.
-# 2) Give at least 4 recommendations.
-# 3) Sort recommendations in decreasing order of importance.
-# 4) Provide a short reason for each recommendation based on User history.
-# 5) Refer to the user as "you" in explanations.
-
-
-# """)
-# ])
 
 
 
-# def Recommend(room_list:list,user_history:list): 
-#     # print(f"Room list:{room_list}")
-#     # print(f"user  hist:{user_history}")
-
-#     room_str="\n".join(f"room_id:{dct["id"]} room_name:{dct["name"]} room_description:{dct["description"]}" for dct in room_list)
-#     user_hist_str="\n".join(f"room_id:{dct["id"]} room_name:{dct["name"]} room_description:{dct["description"]}" for dct in room_list)
+def Recommend(room_list:list,user_history:list): 
     
-#     prompt = template.format_messages(
-#         room_lst=room_str,
-#         user_history_lst=user_hist_str
-#     )
+    room_str="\n".join(f"room_id:{dct.get('id')} room_name:{dct.get('name')} room_description:{dct.get('description')}" for dct in room_list)
+    user_hist_str="\n".join(f"room_id:{dct.get('id')} room_name:{dct.get('name')} room_description:{dct.get('description')}" for dct in user_history)
 
-#     response=llm_structured_op.invoke(prompt)
-#     lst=[]
-#     for i in range(0,len(response.recommendation)):
-#         dct={}
-#         dct["name"]=response.recommendation[i].room_name
-#         dct["id"]=response.recommendation[i].room_id
-#         dct["reason"]=response.recommendation[i].reason
-#         # print(f"✅✅LLm response:{response.recommendation[0].room_name}")
-#         lst.append(dct)
-#     # print(lst)
-#     return lst
+    system_prompt=get_prompt("recommend.md")
+
+    humanprompt=f"""
+    Available rooms (List_of_rooms): {room_str}
+    User history: {user_hist_str}
+    """
+
+    llm=get_model_with_structed_output(settings.OPENAI_MODEL_RECOMMENDATION,RespFormat)
+    response=llm.invoke([system_prompt,humanprompt])
+
+    print(f"✅✅LLm response:{response}")
+
+    lst=[]
+    for i in range(0,len(response.recommendation)):
+        dct={}
+        dct["name"]=response.recommendation[i].room_name
+        dct["id"]=response.recommendation[i].room_id
+        dct["reason"]=response.recommendation[i].reason
+        print(f"✅✅LLm response:{response.recommendation[0].room_name}")
+        lst.append(dct)
+    print(lst)
+    return lst
     
 

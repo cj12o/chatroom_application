@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 import json
 from base.logger import logger
 from base.serializers.message_serializer import MessageSerializerForCreation
+from django.db.models import Q
 
 def saveMessage(room_id:int,username:str,message:str,parent:int|None=None)->int:
     "saves message to db"
@@ -145,3 +146,12 @@ def get_message_tree(room_id: int, page: int = 1, page_size: int = 10) -> dict:
         "total_roots": total_roots,
         "has_next": (start + page_size) < total_roots,
     }
+
+def get_lastest_moderated_unsummerized_message(room_id:int,k:int):
+    "returns last k messages which are not summerized and are moderated and safe from recent->oldest"
+    if k<=0:
+        return []
+    msgs=Message.objects.filter(Q(room__id=room_id) & Q(messagesummerizedstatus__status=False)&Q(is_moderated=True)&Q(is_unsafe=False)).all()[:k]
+    return [msg.message for msg in msgs]
+  
+    
