@@ -2,7 +2,6 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
-import subprocess
 
 def main():
     """Run administrative tasks."""
@@ -17,16 +16,8 @@ def main():
         ) from exc
     execute_from_command_line(sys.argv)
 
-def updateReq():
-    subprocess.run(args="python -m pip freeze > requirements.txt",shell=True)
-
-# def setup_periodic_task():
-#     subprocess.run(args="python manage.py setup_periodic_task",shell=True)
-
 if __name__ == '__main__':
-   
-    # setup_periodic_task()
     main()
-    # updateReq()
+
 
     

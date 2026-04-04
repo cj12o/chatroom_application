@@ -41,41 +41,49 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             logger.error(f"User error in chat message:{e}")
             
     async def connect(self):
-        try:
+        username = self.scope.get("username")
+        user_id = self.scope.get("user_id")
+
+        if username is None:
             await self.accept()
-            print(f"User:{self.scope['username']}")
-            # print(f"🗼🗼SCOPE:{self.scope}")
-            if self.scope["username"] is None:
-                await self.close()
-                return
+            await self.close(code=4003) # 4003 is 'Forbidden'
+            return
+        else:
+            
+            await self.accept()
+            # print(f"User:{self.scope['username']}")
+            # # print(f"🗼🗼SCOPE:{self.scope}")
+            # if self.scope["username"] is None:
+            #     await self.close()
+            #     return
 
             # p(f"user:{self.scope["username"]}")
-            self.room_id = self.scope["url_route"]["kwargs"]["q"]
-            self.room_name = await get_room_name_fn(int(self.room_id))
-            self.room_group = f"room_{self.room_id}"
+            if self.scope.get("url_route",{}).get("kwargs",{}).get("q"):
+                self.room_id = self.scope["url_route"]["kwargs"]["q"]  
+                self.room_name = await get_room_name_fn(int(self.room_id))
+                self.room_group = f"room_{self.room_id}"
 
-            await self.channel_layer.group_add(
-                self.room_group,
-                self.channel_name
-            )
+                await self.channel_layer.group_add(
+                    self.room_group,
+                    self.channel_name
+                )
 
-            await self.channel_layer.group_send(
-                self.room_group,
-                {
-                    "type": "chat_message",
-                    "task":"user_status_update",
-                    "message":"",   
-                    "file":"",
-                    "image":"",
-                    "username":self.scope["username"],
-                    "status": True
-                }
-            )
+                await self.channel_layer.group_send(
+                    self.room_group,
+                    {
+                        "type": "chat_message",
+                        "task":"user_status_update",
+                        "message":"",   
+                        "file":"",
+                        "image":"",
+                        "username":username,
+                        "status": True
+                    }
+                )
 
-            # print(f"✅ Connected: {self.channel_name} joined {self.room_group}")
-            await maintain_user_visibility_fn(self.scope["username"],True)
-        except Exception as e:
-            logger.error(f"Error in connect: {e}")
+                # print(f"✅ Connected: {self.channel_name} joined {self.room_group}")
+                await maintain_user_visibility_fn(username,True)
+        
 
 
     async def receive(self,text_data):

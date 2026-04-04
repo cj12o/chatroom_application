@@ -11,13 +11,20 @@ def add_summerize_task(json_msg:dict):
     from django.conf import settings
     from langchain.messages import HumanMessage, SystemMessage
     from base.services.message_services import get_lastest_moderated_unsummerized_message
+    from base.services.rate_limiter import check_and_increment
 
     try:
         """
         param->queue of messages
         step 1) get file path from db
-        2) 
+        2)
         """
+        # Rate limit: use room_id as a proxy since summarization is per-room
+        room_id_for_limit = int(json_msg["room_id"])
+        if not check_and_increment(room_id_for_limit, "summarization"):
+            logger.warning(f"Summarization rate limit hit for room_id:{json_msg['room_id']}")
+            return
+
         logger.info(f"Summerization task started for room_id:{json_msg['room_id']}")
         room_id=int(json_msg["room_id"])
         message_lst=get_lastest_moderated_unsummerized_message(room_id,settings.SUMMERIZATION_BATCH_SIZE)

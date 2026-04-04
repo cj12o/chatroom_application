@@ -4,11 +4,17 @@ from ..logger import logger
 import math
 import spacy
 
+_nlp=None
+def lazy_load_nlp():
+    global _nlp
+    if _nlp is None:
+        _nlp = spacy.load("en_core_web_md")
+    return _nlp
 
-nlp = spacy.load("en_core_web_md")
 
 def get_embeddings(corpus: list):
     """Return list of vectors"""
+    nlp=lazy_load_nlp()
     return [nlp(text).vector for text in corpus]
         
 
@@ -26,7 +32,7 @@ def cosine_sim(a, b):
 
 def topic_assigner(topic_lst: list, user_topic: str):
     """Return most similar topic"""
-
+    nlp=lazy_load_nlp()
     topic_embeddings = get_embeddings(topic_lst)
     user_embedding = nlp(user_topic).vector
 

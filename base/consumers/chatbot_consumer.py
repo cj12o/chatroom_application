@@ -1,25 +1,20 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
-from base.services.llm_services import get_model
+from base.services.llm_services import get_model_for_stream
 import asyncio
 import json
 import uuid
-from base.models.room_model import Room
-from langchain.messages import SystemMessage,HumanMessage
+from base.models  import Room,ChatFileLog
 from asgiref.sync import sync_to_async
 from base.services.room_services import get_room_name
-from ..logger import logger
+from base.services.rate_limiter import check_and_increment
+from base.logger import logger
 
-SYSTEM_PROMPT=""
-HUMAN_PROMPT=""
-
-def contextGiver(room_id:int,username:str)->None:
+def contextGiver(room_id:int,username:str,query:str)->list:
     try:
-        from base.logger import logger
-        from base.models import ChatFileLog
         """
         gives context to chatbot
         """
-        global SYSTEM_PROMPT,HUMAN_PROMPT
+        
 
         room=Room.objects.get(id=room_id)
 
@@ -50,63 +45,68 @@ def contextGiver(room_id:int,username:str)->None:
 
         human_prompt=f"""
         name of the user :{username}
-        query:
+        query: {query}
         """
-
-        SYSTEM_PROMPT=system_prompt
-        HUMAN_PROMPT=human_prompt
+        return [system_prompt,human_prompt]
         # print(f"SYSTEM_PROMPT:{SYSTEM_PROMPT}")
 
     except Exception as e:
         logger.error(f"ERROR in chat bot consumer.py context giver func:{str(e)}")
+        return []
 
 
 
 
 
-get_room_name=sync_to_async(get_room_name)
-contextGiver=sync_to_async(contextGiver)
+get_room_name_async=sync_to_async(get_room_name)
+contextGiver_async=sync_to_async(contextGiver)
 
 class LlmConsumer(AsyncWebsocketConsumer):
     group_name = ""
     async def connect(self):
-        
-        await self.accept()
-        print(f"SCOPE:{self.scope}")
-        if self.scope["username"] is None:
-            await self.close()
+        username=self.scope.get("username")
+        user_id=self.scope.get("user_id")
+
+        if username is None:
+            await self.accept()
+            await self.close(code=4003)
             logger.error("❌❌ Chatbot closed unauthenticated user")
             return
+     
+        await self.accept()
+        print(f"SCOPE:{self.scope}")
         
         # print("✅ Chatbot connected")
+        if self.scope.get("url_route",{}).get("kwargs",{}).get("q"):
+            self.room_id = self.scope["url_route"]["kwargs"]["q"]
+            self.room_name = await get_room_name_async(int(self.room_id))
+            self.room_chatbot_group = f"room_chatbot_{self.room_id}_{user_id}"
+            self.username=username
+            
+            await self.channel_layer.group_add(
+                self.room_chatbot_group,
+                self.channel_name
+            )
+            
+            ##Send greet
+            unique_id=uuid.uuid4()
+            loop = asyncio.get_event_loop()
+            
 
-        self.room_id = self.scope["url_route"]["kwargs"]["q"]
-        self.room_name = await get_room_name(int(self.room_id))
-        self.room_chatbot_group = f"room_chatbot_{self.room_id}"
-        
-        await self.channel_layer.group_add(
-            self.room_chatbot_group,
-            self.channel_name
-        )
+            llm=get_model_for_stream("gpt-4o-mini")
+            if llm is None:
+                await self.send(text_data=json.dumps({"error": "LLM not found"}))
+                return
+            systemPrompt=f"Greet the user using their name, username:{username}"
+            resp=llm.stream([systemPrompt])
+            
+            for token in resp:
+                print(f"Token:{token}")
+                await self.send(text_data=json.dumps({"token": token.content,"id":str(unique_id),"status":"firstMsg"}))
 
-        await contextGiver(int(self.scope["url_route"]["kwargs"]["q"]),self.scope["username"])
-        
-        ##Send greet
-        unique_id=uuid.uuid4()
-        loop = asyncio.get_event_loop()
-        
+                await asyncio.sleep(0.01)
 
-        # resp = await loop.run_in_executor(None, lambda: llm.stream(text_data))
-        llm=get_model("gpt-3.5-turbo")
-        resp=await loop.run_in_executor(None,lambda:llm.stream([SystemMessage(content=f"Greet the user using their name, username:{self.scope['username']} ")]))
-        
-        for token in resp:
-            print(f"Token:{token}")
-            await self.send(text_data=json.dumps({"token": token.content,"id":str(unique_id),"status":"firstMsg"}))
-
-            await asyncio.sleep(0.01)
-
-        await self.send(text_data=json.dumps({"status": "done"}))
+            await self.send(text_data=json.dumps({"status": "done"}))
 
 
 
@@ -125,19 +125,34 @@ class LlmConsumer(AsyncWebsocketConsumer):
         Called when the client sends a message.
         text_data = user's question.
         """
+        # Rate limit LLM calls per user
+        user_id = self.scope.get("user_id")
+        if user_id:
+            allowed = await sync_to_async(check_and_increment)(user_id, "chatbot")
+            if not allowed:
+                await self.send(text_data=json.dumps({
+                    "error": "Rate limit exceeded. Please wait before sending more messages.",
+                    "status": "rate_limited"
+                }))
+                return
+
         print(f"Received prompt: {text_data} unique_id={1}")
         await self.send(text_data=json.dumps({"token":text_data,"id":str(unique_id),"isQuestion":True}))
         
-        loop = asyncio.get_event_loop()
         
+        llm=get_model_for_stream("gpt-4o-mini")
+        if llm is None:
+            await self.send(text_data=json.dumps({"error": "LLM not found"}))
+            return
+        
+        prompt_lst=await contextGiver_async(self.room_id,self.username,text_data)
 
-        # resp = await loop.run_in_executor(None, lambda: llm.stream(text_data))
+        if prompt_lst is None or len(prompt_lst)!=2:
+            await self.send(text_data=json.dumps({"error": "Context not found"}))
 
-        resp=await loop.run_in_executor(None,lambda:llm.stream([SystemMessage(content=SYSTEM_PROMPT),HumanMessage(content=HUMAN_PROMPT+text_data)]))
+        resp=llm.stream(prompt_lst)
         
         for token in resp:
             await self.send(text_data=json.dumps({"token": token.content,"id":str(unique_id)}))
-
             await asyncio.sleep(0.01)
-
         await self.send(text_data=json.dumps({"status": "done"}))

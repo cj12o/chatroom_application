@@ -208,3 +208,16 @@ SUMMERIZATION_BATCH_SIZE=10
 OPENAI_API_KEY = get_env_setting("OPENAI_API_KEY")
 
 OPENAI_MODEL_RECOMMENDATION="gpt-4o-mini"
+
+# LLM Rate Limits (per user)
+# max_calls: number of allowed calls within the window
+# window: time window in seconds
+LLM_RATE_LIMITS = {
+    "recommendation": {"max_calls": 1, "window": 3600},      # 1 per hour
+    "chatbot": {"max_calls": 1, "window": 3600},             # 30 per hour
+    "agent": {"max_calls": 10, "window": 3600},               # 10 per hour
+    "summarization": {"max_calls": 20, "window": 3600},       # 20 per hour
+}
+
+# Recommendation freshness: skip regeneration if recommendations exist and are newer than this (seconds)
+RECOMMENDATION_FRESHNESS_SECONDS = 3600  # 1 hour

@@ -10,7 +10,7 @@ from  base.services.prompt_services import get_prompt
 from base.logger import logger
 
 class RoomFormat(BaseModel):
-    room_name:str=Field(description="room_name")
+    room_name:str=Field(description="  room_name")
     room_id:int=Field(description="room_id")
     reason:str=Field(description="reason why this room is recommended")
 
@@ -67,23 +67,40 @@ def insertRecommInDB(recom_dct:dict,username:str):
     except Exception as e:
         logger.error(e)
 
-@shared_task 
+@shared_task
 def orchestrator(username:str,sessioncount:int,per_session_hist_count:int):
     """
-    1)get user hist 
+    1)get user hist
     2)get cosin sim rooms
     3)recommend(llm)
     4)insert in db
-    
+
     """
     from .recommend_task import HistList,getCosinSimRooms
     from base.models import Room
+    from base.models.recommendation_model import Recommend as RecommendModel
     from .llm_task import insertRecommInDB
     from base.logger import logger
+    from django.contrib.auth.models import User
+    from base.services.rate_limiter import check_and_increment
+
     try:
+        user = User.objects.get(username=username)
+
+        # Skip if recommendations already exist for this user
+        existing = RecommendModel.objects.filter(user=user).first()
+        if existing:
+            logger.info(f"Fresh recommendations exist for {username}, skipping LLM call")
+            return
+
+        # Rate limit check
+        if not check_and_increment(user.id, "recommendation"):
+            logger.warning(f"Recommendation rate limit hit for user {username}")
+            return
+
         user_history_dict=HistList(username=username,x=sessioncount,k=per_session_hist_count)
-       
-      
+
+
         resultant_list=getCosinSimRooms(user_history_dict=user_history_dict)
         room_list=[]
         for k,v in user_history_dict.items():
@@ -96,7 +113,7 @@ def orchestrator(username:str,sessioncount:int,per_session_hist_count:int):
                 room_list.append({"id":r_id,"name":room.name,"description":room.description})
 
         final_rooms_to_recommend=Recommend(room_list=resultant_list,user_history=room_list)
-        
+
         insertRecommInDB.delay(final_rooms_to_recommend,username)
     except Exception as e:
         logger.error(e)

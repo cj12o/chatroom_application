@@ -281,15 +281,16 @@ def start_agent():
         from django.db.models import Q
         from django.utils.dateparse import parse_datetime
         from base.logger import logger
+        from base.services.rate_limiter import check_and_increment
 
         """
         1)call main to get result
-        2)save in database 
+        2)save in database
         3)(in app)signal->ws
 
         """
 
-        #TODO:ADD POLL CREATED ALSO 
+        #TODO:ADD POLL CREATED ALSO
         agent_msg=None
         rooms=Room.objects.all()
 
@@ -297,7 +298,11 @@ def start_agent():
         hour_diff=0
     
         for r in rooms:
-            
+            # Rate limit agent LLM calls per room
+            if not check_and_increment(r.id, "agent"):
+                logger.warning(f"Agent rate limit hit for room {r.name}")
+                continue
+
             lastMsg=Message.objects.filter(Q(room__id=r.id)).order_by('-created_at').first()
             if lastMsg is None:
                 logger.info(f"No msgs in room {r.name}")
