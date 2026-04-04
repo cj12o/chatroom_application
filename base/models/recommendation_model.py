@@ -11,3 +11,5 @@ class Recommend(models.Model):
     reason=models.CharField()
     session=models.CharField()
 
+    class Meta:
+        unique_together = ('user', 'room')
