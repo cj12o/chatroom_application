@@ -7,10 +7,11 @@ from channels.layers import get_channel_layer
 import asyncio
 from ..logger import logger
 from redis import Redis
+from django.conf import settings
 from base.tasks import start_moderation
 from ..threadPool import ThreadPoolManager
 
-reddis=Redis(host='localhost', port=6379)
+reddis=Redis(host=settings.REDIS_HOST, port=int(settings.REDIS_PORT))
 K=5
 
 class Message(models.Model):

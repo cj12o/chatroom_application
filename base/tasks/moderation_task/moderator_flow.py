@@ -62,7 +62,7 @@ def moderate(corpus:list[tuple[int,str]]):
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def start_moderation():
+def start_moderation(self):
     "start moderation "
     from base.models import Message
     from base.logger import logger

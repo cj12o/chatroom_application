@@ -90,7 +90,6 @@ class LlmConsumer(AsyncWebsocketConsumer):
             
             ##Send greet
             unique_id=uuid.uuid4()
-            loop = asyncio.get_event_loop()
             
 
             llm=get_model_for_stream("gpt-4o-mini")

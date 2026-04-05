@@ -12,7 +12,13 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.conf import settings
 
-llm=get_model("gpt-4o-mini")
+_llm=None
+
+def lazy_llm():
+    global _llm
+    if _llm is None:
+        _llm=get_model("gpt-4o-mini")
+    return _llm
 
 class MessagesState(TypedDict):
     messages:Annotated[list[AnyMessage],operator.add]
@@ -46,8 +52,10 @@ def pollGenerator():
     }}
 
     """
-
-
+    
+    llm=lazy_llm()
+    if llm is None:
+        return
     llm_output=llm.invoke([SystemMessage(content=SYSTEM_PROMPT)])
     # print(f"\n=====poll_gen output:{llm_output}=======\n")
 
@@ -74,8 +82,10 @@ def threadGenerator():
     - Thread should be small and interesting (50-100) words maximum 
     - if you can give any url of website or article related to thread , it not mandatory but good to have 
     """
-
-
+    
+    llm=lazy_llm()
+    if llm is None:
+        return  
     llm_output=llm.invoke([SystemMessage(content=SYSTEM_PROMPT),HumanMessage(content="generate thread")])
     # print(f"\n=====poll_gen output:{llm_output}=======\n")
     
@@ -83,7 +93,8 @@ def threadGenerator():
 
 
 tools=[pollGenerator,threadGenerator]
-llm_with_tools=llm.bind_tools(tools)
+# llm_with_tools_=lazy_llm()
+# llm_with_tools=llm_with_tools_.bind_tools(tools)
 tool_toolname_mapper={tool.name:tool for tool in tools}
 
 
@@ -116,6 +127,15 @@ def llm_node(state: dict) -> dict:
     - calling a tool is manadatory
     
     """
+
+    llm_with_tools_=lazy_llm()
+    if llm_with_tools_ is None:
+        return {
+            "messages":[],
+            "llm_calls":state.get("llm_calls",0)
+        }
+    
+    llm_with_tools=llm_with_tools_.bind_tools(tools)
 
     llm_output = llm_with_tools.invoke(
         [SystemMessage(content=SYSTEM_PROMPT)] + state["messages"]

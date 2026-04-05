@@ -17,35 +17,22 @@ from dotenv import load_dotenv
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-load_dotenv(BASE_DIR / ".env")
 
-
-def get_env_setting(key: str, default=None, required: bool = False):
-    value = os.getenv(key, default)
-    if required and value is None:
-        raise ImproperlyConfigured(f"Set the {key} environment variable")
-    return value
-
+load_dotenv(BASE_DIR / ".env.local")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = get_env_setting("DJANGO_SECRET_KEY", required=True)
-
-
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = get_env_setting("DJANGO_DEBUG", "True").lower() in ("true", "1", "yes", "on")
-
-ALLOWED_HOSTS = [
-    # host.strip()
-    # for host in get_env_setting("DJANGO_ALLOWED_HOSTS", "").split(",")
-    # if host.strip()
-    ".railway.app"
-]
+DEBUG = bool(os.environ.get("DJANGO_DEBUG",True))
 
 if DEBUG:
-    ALLOWED_HOSTS.extend(["localhost", "127.0.0.1"])
+    load_dotenv(BASE_DIR / ".env.local")
+
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
+
+ALLOWED_HOSTS = [hst for hst in str(os.environ.get("DJANGO_ALLOWED_HOSTS")).split(",")]
+
 
 # Application definition
 
@@ -105,11 +92,11 @@ ASGI_APPLICATION = "core.asgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': get_env_setting("POSTGRES_DB", "ChatApp"),
-        'USER': get_env_setting("POSTGRES_USER", "postgres"),
-        'PASSWORD': get_env_setting("POSTGRES_PASSWORD", "1234"),
-        'HOST': get_env_setting("POSTGRES_HOST", "localhost"),
-        'PORT': get_env_setting("POSTGRES_PORT", "5432"),
+        'NAME': os.environ.get("DB_NAME"),
+        'USER': os.environ.get("DB_USER"),
+        'PASSWORD': os.environ.get("DB_PASSWORD"),
+        'HOST': os.environ.get("DB_HOST"),
+        'PORT': os.environ.get("DB_PORT")
     }
 }
 
@@ -161,18 +148,15 @@ MEDIA_ROOT = BASE_DIR/'media'
 
 STATICFILES_DIRS=(BASE_DIR/'static',)
 
-# CORS_ALLOWED_ORIGINS=[
-#     "http://localhost:5137"
-# ]
 
 CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = get_env_setting("DJANGO_CORS_ALLOWED_ORIGINS", "http://localhost:5173").split(",")
+CORS_ALLOWED_ORIGINS = [origin for origin in str(os.environ.get("DJANGO_ALLOWED_ORIGINS")).split(",")]
 CORS_ALLOW_CREDENTIALS = True
 
 
-REDIS_HOST = get_env_setting("REDIS_HOST", "127.0.0.1")
-REDIS_PORT = int(get_env_setting("REDIS_PORT", "6379"))
-REDIS_URL = get_env_setting("REDIS_URL", f"redis://{REDIS_HOST}:{REDIS_PORT}/0")
+REDIS_HOST = os.environ.get("REDIS_HOST")
+REDIS_PORT = os.environ.get("REDIS_PORT")
+REDIS_URL = os.environ.get("REDIS_URL", f"redis://{REDIS_HOST}:{REDIS_PORT}/0")
 
 CHANNEL_LAYERS = {
     "default": {
@@ -183,29 +167,27 @@ CHANNEL_LAYERS = {
     }
 }
 
-CELERY_BROKER_URL = get_env_setting("CELERY_BROKER_URL", REDIS_URL)
+CELERY_BROKER_URL = REDIS_URL
 CELERY_TIMEZONE = "Asia/Kolkata"
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
 
 # "redis://localhost:6379/0"
-CELERY_RESULT_BACKEND = get_env_setting("CELERY_RESULT_BACKEND", "django-db")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND")
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 5
 }
 
-SITE_BASE_URL = get_env_setting("SITE_BASE_URL")
-# LLM_BASE_URL = get_env_setting("LLM_BASE_URL", "http://127.0.0.1:1239/v1/")
-LLM_MODEL_NAME = get_env_setting("LLM_MODEL_NAME", "gpt-3.5-turbo")
-LLM_API_KEY = get_env_setting("LLM_API_KEY")
-CHROMA_HOST = get_env_setting("CHROMA_HOST", "localhost")
-CHROMA_PORT = int(get_env_setting("CHROMA_PORT", "3000"))
+SITE_BASE_URL = os.environ.get("SITE_BASE_URL")
+LLM_MODEL_NAME = os.environ.get("LLM_MODEL_NAME")
+CHROMA_HOST = os.environ.get("CHROMA_HOST")
+CHROMA_PORT = os.environ.get("CHROMA_PORT", "3000")
 
-LLM_MODEL_SUMMERIZATION=get_env_setting("LLM_MODEL_SUMMERIZATION")
+LLM_MODEL_SUMMERIZATION=os.environ.get("LLM_MODEL_SUMMERIZATION")
 SUMMERIZATION_BATCH_SIZE=10
-OPENAI_API_KEY = get_env_setting("OPENAI_API_KEY")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 OPENAI_MODEL_RECOMMENDATION="gpt-4o-mini"
 
@@ -221,3 +203,4 @@ LLM_RATE_LIMITS = {
 
 # Recommendation freshness: skip regeneration if recommendations exist and are newer than this (seconds)
 RECOMMENDATION_FRESHNESS_SECONDS = 3600  # 1 hour
+
