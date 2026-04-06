@@ -1,9 +1,21 @@
 import chromadb
+from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
 from django.conf import settings
 
 from base.logger import logger
 
 COLLECTION_NAME = "all_rooms_data"
+
+_embedding_fn = None
+
+def get_embedding_fn():
+    global _embedding_fn
+    if _embedding_fn is None:
+        _embedding_fn = OpenAIEmbeddingFunction(
+            api_key=settings.OPENAI_API_KEY,
+            model_name="text-embedding-3-small",
+        )
+    return _embedding_fn
 
 
 def get_client():
@@ -14,7 +26,7 @@ def get_client():
 
 
 def get_collection(name=COLLECTION_NAME):
-    return get_client().get_or_create_collection(name)
+    return get_client().get_or_create_collection(name, embedding_function=get_embedding_fn())
 
 
 def add_room(room):

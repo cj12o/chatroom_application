@@ -11,7 +11,7 @@ from django.conf import settings
 from base.tasks import start_moderation
 from ..threadPool import ThreadPoolManager
 
-reddis=Redis(host=settings.REDIS_HOST, port=int(settings.REDIS_PORT))
+reddis=Redis(host=str(settings.REDIS_HOST), port=settings.REDIS_PORT)
 K=5
 
 class Message(models.Model):

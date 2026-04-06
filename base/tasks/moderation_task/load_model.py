@@ -3,7 +3,7 @@ import joblib
 from django.conf import settings
 
 
-MODEL_PATH = os.path.join(settings.BASE_DIR,r"base\moderator_model.pkl")
+MODEL_PATH = os.path.join(settings.BASE_DIR, "base", "moderator_model.pkl")
 
 print("Loading moderation model from:", MODEL_PATH)
 print("Exists?", os.path.exists(MODEL_PATH))

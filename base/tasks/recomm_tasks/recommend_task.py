@@ -1,7 +1,5 @@
 from django.db.models import Q
 
-from base.services import chroma_services
-
 
 def HistList(username:str,x:int,k:int)->dict:
     """
@@ -57,6 +55,7 @@ def getCosinSimRooms(user_history_dict:dict)->list:
     "gets rooms similar from chrom DB based on cosine similarity"
     try:
         from base.models import Room
+        from base.services import chroma_services
 
         collection=chroma_services.get_collection()
 

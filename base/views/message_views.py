@@ -123,11 +123,13 @@ class MessageApiview(APIView):
             logger.error(f"Error in posting message: {e}")
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-    def get(self,request,pk):
-        page = int(request.GET.get("page", 1))
-        page_size = int(request.GET.get("page_size", 10))
-        result = get_message_tree(pk, page=page, page_size=page_size)
-        return Response(result, status=status.HTTP_200_OK)
+    def get(self, request, pk):
+        try:
+            result = get_message_tree(pk)
+            return Response(result, status=status.HTTP_200_OK)
+        except Exception as e:
+            logger.error(f"Error in get messages: {e}", exc_info=True)
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
    
     """pk is message id"""

@@ -83,32 +83,13 @@ def get_messages(room_id:int,ascending:bool=False)->list:
         return []
 
 
-def get_message_tree(room_id: int, page: int = 1, page_size: int = 10) -> dict:
+def get_message_tree(room_id: int) -> dict:
     """
-    Reddit-style paginated message tree.
-    - Paginates root messages (parent=None), newest first
-    - Fetches ALL children for those roots in one extra query
+    Reddit-style message tree.
+    - Fetches ALL root messages (parent=None), oldest first
     - Builds nested tree in Python
     """
-    
 
-    # 1. Paginate roots
-    roots_qs = (
-        Message.objects
-        .filter(room_id=room_id, parent=None)
-        .order_by('-created_at')
-    )
-    total_roots = roots_qs.count()
-    start = (page - 1) * page_size
-    paginated_roots = roots_qs[start:start + page_size]
-    root_ids = [m.id for m in paginated_roots]
-
-    if not root_ids:
-        return {"messages": [], "page": page, "total_roots": total_roots, "has_next": False}
-
-    # 2. Fetch roots + ALL descendants in one query
-    #    We fetch every message in the room, then filter in Python.
-    #    This is simpler and avoids depth-limited JOIN chains.
     all_messages = (
         Message.objects
         .filter(room_id=room_id)
@@ -116,16 +97,19 @@ def get_message_tree(room_id: int, page: int = 1, page_size: int = 10) -> dict:
         .order_by('created_at')
     )
 
-    # 3. Serialize all messages into a flat dict keyed by id
+    if not all_messages.exists():
+        return {"messages": []}
+
+    # Serialize all messages into a flat dict keyed by id
     serializer = MessageSerializerForCreation(all_messages, many=True)
     nodes = {}
-    ids=set()
+    ids = set()
     for item in serializer.data:
         item["children"] = []
         nodes[item["id"]] = item
         ids.add(item["id"])
 
-    # 4. Build tree — attach each child to its parent
+    # Build tree — attach each child to its parent
     roots = []
     for item in nodes.values():
         parent_id = item.get("parent")
@@ -134,18 +118,7 @@ def get_message_tree(room_id: int, page: int = 1, page_size: int = 10) -> dict:
         else:
             roots.append(item)
 
-    # 5. Only return roots that are in this page (order: newest first)
-    root_id_set = set(root_ids)
-    paginated = [r for r in roots if r["id"] in root_id_set]
-    # Maintain newest-first order from the paginated query
-    paginated.sort(key=lambda r: root_ids.index(r["id"]))
-
-    return {
-        "messages": paginated,
-        "page": page,
-        "total_roots": total_roots,
-        "has_next": (start + page_size) < total_roots,
-    }
+    return {"messages": roots}
 
 def get_lastest_moderated_unsummerized_message(room_id:int,k:int):
     "returns last k messages which are not summerized and are moderated and safe from recent->oldest"

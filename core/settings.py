@@ -18,7 +18,7 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-load_dotenv(BASE_DIR / ".env.local")
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -32,7 +32,6 @@ if DEBUG:
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 
 ALLOWED_HOSTS = [hst for hst in str(os.environ.get("DJANGO_ALLOWED_HOSTS")).split(",")]
-
 
 # Application definition
 
@@ -149,12 +148,12 @@ MEDIA_ROOT = BASE_DIR/'media'
 STATICFILES_DIRS=(BASE_DIR/'static',)
 
 
-CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = [origin for origin in str(os.environ.get("DJANGO_ALLOWED_ORIGINS")).split(",")]
+CORS_ALLOW_ALL_ORIGINS = True
+# CORS_ALLOWED_ORIGINS = [origin for origin in str(os.environ.get("DJANGO_ALLOWED_ORIGINS")).split(",")]
 CORS_ALLOW_CREDENTIALS = True
 
 
-REDIS_HOST = os.environ.get("REDIS_HOST")
+REDIS_HOST = os.environ.get("REDIS_HOST","redis")
 REDIS_PORT = os.environ.get("REDIS_PORT")
 REDIS_URL = os.environ.get("REDIS_URL", f"redis://{REDIS_HOST}:{REDIS_PORT}/0")
 

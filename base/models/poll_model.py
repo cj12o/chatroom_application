@@ -61,7 +61,7 @@ def helers(sender,instance,created,**kwargs):
                 'question':instance.question,
                 'options':instance.choices["choices"]
             },
-            'room_id':instance.message.id
+            'room_id':instance.room.id
         }
         # print(f"✅✅POLL GENERATOR POST SAVE SENDING {agent_msg}")
         ThreadPoolManager.get().submit(lambda:asyncio.run(connectTows(agent_msg=agent_msg,poll_id=instance.id,message_id=instance.message.id)))

@@ -1,5 +1,6 @@
 from celery import shared_task
 from base.services.llm_services import get_model
+from base.services.prompt_services import get_prompt
 from langchain.tools import tool
 from typing import TypedDict,Annotated,Literal
 from langchain.messages import AnyMessage,SystemMessage,ToolMessage,HumanMessage
@@ -27,68 +28,46 @@ class MessagesState(TypedDict):
 class Context(TypedDict):
     room_name:str
     room_description:str
+    chat_summary:str
 
 context:Context={}
 
 @tool(description="this tool generates interesting poll to increase chat room's activity")
 def pollGenerator():
-    
     """
     This tool generates interesting poll to increase chat room's activity.
-
-    Args:
-        state: agent's state
     """
-    print("---------------POLL GEN CALLED---------------------------")
-    SYSTEM_PROMPT=f""" 
-    You are an expert poll generator generate a poll based on given room details:
-    Chat Room Name:{context["room_name"]}
-    Chat Room Description:{context["room_description"]}
-    
-    Output must be in this JSON format only:
-    {{
-        "question":"poll title ", 1
-        "options":[choice 1,choice 2]
-    }}
+    SYSTEM_PROMPT=get_prompt(
+        "poll_generator.md",
+        room_name=context.get("room_name",""),
+        room_description=context.get("room_description",""),
+        chat_summary=context.get("chat_summary","No recent messages available.")
+    )
 
-    """
-    
     llm=lazy_llm()
     if llm is None:
         return
     llm_output=llm.invoke([SystemMessage(content=SYSTEM_PROMPT)])
-    # print(f"\n=====poll_gen output:{llm_output}=======\n")
-
     return llm_output.content
 
 
 
 @tool(description="this tool generates interesting thread/comments to increase chat room's activity")
 def threadGenerator():
-    
     """
-    This tool generates interesting threads/comments  to increase chat room's activity.
+    This tool generates interesting threads/comments to increase chat room's activity.
+    """
+    SYSTEM_PROMPT=get_prompt(
+        "thread_generator.md",
+        room_name=context.get("room_name",""),
+        room_description=context.get("room_description",""),
+        chat_summary=context.get("chat_summary","No recent messages available.")
+    )
 
-    Args:
-        state: agent's state
-    """
-    print("---------------THREADGEN GEN CALLED---------------------------")
-    SYSTEM_PROMPT=f""" 
-    You are an expert in the room's topic  ,generate an interesting thread/comment based on given room details:
-        Chat Room Name:{context["room_name"]}
-        Chat Room Description:{context["room_description"]}
-        
-    Instructions:
-    - Thread should be small and interesting (50-100) words maximum 
-    - if you can give any url of website or article related to thread , it not mandatory but good to have 
-    """
-    
     llm=lazy_llm()
     if llm is None:
-        return  
+        return
     llm_output=llm.invoke([SystemMessage(content=SYSTEM_PROMPT),HumanMessage(content="generate thread")])
-    # print(f"\n=====poll_gen output:{llm_output}=======\n")
-    
     return llm_output.content
 
 
@@ -104,29 +83,7 @@ def llm_node(state: dict) -> dict:
     The LLM acts as an engagement agent for a chat room.
     """
 
-    SYSTEM_PROMPT = """ 
-    You are an expert **Chat Room Engagement Agent**.
-    Your goal is to **increase engagement and activity** in this room
-    by making conversations more interesting, interactive, or fun.
-
-    ## Instructions:
-    - Always understand the current context from the conversation messages.
-    - If interactivity can be increase by generating a  poll, call  the `pollGenerator` tool.
-    - else call `threadGenerator` tool.
- 
-
-    ## Available tool:
-    - pollGenerator(context: str) → Generates a poll for the room to increase engagement.
-    - threadGenerator(context: str) → Generates a thread for the room to increase engagement.
-
-    ## Guidelines:
-    - Do not repeat user messages.
-    - Be concise and engaging.
-    - Always call the tool ,which makes the chat more interactive.
-    - If you call a tool, provide only the tool call — no extra commentary.
-    - calling a tool is manadatory
-    
-    """
+    SYSTEM_PROMPT = get_prompt("engagement_agent.md")
 
     llm_with_tools_=lazy_llm()
     if llm_with_tools_ is None:
@@ -181,7 +138,7 @@ def re_run(state: dict) -> Literal["tool_node",END]:
     return END
 
 @shared_task
-def main(room_id:int,room_name:str,room_description:str)->dict:
+def main(room_id:int,room_name:str,room_description:str,chat_summary:str="")->dict:
 
     graph=StateGraph(MessagesState)
 
@@ -195,6 +152,7 @@ def main(room_id:int,room_name:str,room_description:str)->dict:
     agent=graph.compile()
     context["room_description"]=room_description
     context["room_name"]=room_name
+    context["chat_summary"]=chat_summary
     # result=agent.invoke({"messages":[HumanMessage("make chat room interactive")],"llm_calls":0},{"recursion_limit": 10,"max_iteration":1})
     result=agent.invoke({"messages":[HumanMessage("make chat room interactive")],"llm_calls":0},recursion_limit=10,max_iteration=1)
 

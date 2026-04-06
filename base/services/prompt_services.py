@@ -2,7 +2,7 @@ from django.conf import settings
 import os
 from base.logger import logger
 
-def get_prompt(prompt_file:str):
+def get_prompt(prompt_file:str,**kwargs):
     base_dir=settings.BASE_DIR
     path=os.path.join(base_dir,"base","prompts",prompt_file)
     if not os.path.exists(path):
@@ -10,5 +10,7 @@ def get_prompt(prompt_file:str):
         return ""
     with open(path) as f:
         prompt = f.read()
+    if kwargs:
+        prompt=prompt.format(**kwargs)
     return prompt
 

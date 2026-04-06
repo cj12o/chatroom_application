@@ -4,6 +4,7 @@ from ..views import admin_views as av
 
 from ..views.room_views import room_views as rv
 from ..views.room_views import member_views as mem_v
+from ..views.room_views import boost_view as bv
 
 from ..views import message_views as mv
 from ..views import profile_views as pv
@@ -92,6 +93,9 @@ urlpatterns=[
     path("join-request/create/", jrv.RequestJoinView.as_view()),
     path("join-request/list/", jrv.ListJoinRequestsView.as_view()),
     path("join-request/manage/", jrv.ManageJoinRequestView.as_view()),
+
+    # Boost room (on-demand agent)
+    path("rooms/<int:pk>/boost/", bv.BoostRoomView.as_view()),
 
     # Health checks
     path("health/chroma/", hv.chroma_health),
